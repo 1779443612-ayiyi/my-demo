@@ -1,0 +1,2865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Florae — 和植物一起生活</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --phone-w: 393px;
+            --phone-h: 852px;
+            --safe-top: 59px;
+            --safe-bottom: 34px;
+            --nav-h: 83px;
+            --green-deep: #1a3d2e;
+            --green-mid: #2d5a42;
+            --green-soft: #5c9a72;
+            --green-glow: #8fd4a8;
+            --cream: #faf8f4;
+            --warm: #fff5eb;
+            --coral: #ff8a6a;
+            --sun: #ffd166;
+            --sky: #a8d8ea;
+            --lavender: #d4c5f9;
+            --glass: rgba(255, 255, 255, 0.62);
+            --glass-border: rgba(255, 255, 255, 0.85);
+            --shadow: 0 8px 32px rgba(26, 61, 46, 0.12);
+            --shadow-lg: 0 20px 60px rgba(26, 61, 46, 0.18);
+            --radius: 22px;
+            --radius-sm: 14px;
+            --radius-pill: 100px;
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            --font-hand: "Bradley Hand", "Snell Roundhand", "PingFang SC", cursive;
+            --paper: #f5f0e8;
+            --paper-line: rgba(92, 154, 114, 0.08);
+            --feed-bg: #f2f6f3;
+            --moment-bg: #ffffff;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: var(--font);
+            background: linear-gradient(160deg, #e8f5e9 0%, #fff8f0 40%, #f0ebe3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Phone shell */
+        .phone {
+            width: var(--phone-w);
+            height: var(--phone-h);
+            max-height: 100dvh;
+            background: var(--feed-bg);
+            border-radius: 48px;
+            overflow: hidden;
+            position: relative;
+            box-shadow:
+                0 0 0 10px #1a1a1a,
+                0 0 0 12px #333,
+                var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 420px) {
+            body {
+                background: var(--cream);
+            }
+            .phone {
+                width: 100%;
+                height: 100dvh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+        }
+
+        /* Ambient blobs */
+        .ambient {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.45;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .blob-1 { width: 220px; height: 220px; background: #b8e6c8; top: -40px; right: -60px; }
+        .blob-2 { width: 180px; height: 180px; background: #ffe4c4; bottom: 120px; left: -50px; animation-delay: -3s; }
+        .blob-3 { width: 140px; height: 140px; background: #c5e8f7; top: 40%; right: -30px; animation-delay: -5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(12px, -16px) scale(1.05); }
+        }
+
+        /* Status bar */
+        .status-bar {
+            position: relative;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--green-deep);
+        }
+
+        .status-bar__time { letter-spacing: -0.3px; }
+        .status-bar__icons { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+
+        /* Screen container */
+        .screens {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .screen {
+            position: absolute;
+            inset: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(12px);
+            transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s;
+            padding-bottom: calc(var(--nav-h) + 72px);
+        }
+
+        .screen.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .screen::-webkit-scrollbar { display: none; }
+
+        /* Shared header */
+        .screen-header {
+            padding: 4px 20px 16px;
+        }
+
+        .screen-header__tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--green-mid);
+            background: rgba(92, 154, 114, 0.15);
+            padding: 5px 12px;
+            border-radius: var(--radius-pill);
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .screen-header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            color: var(--green-deep);
+        }
+
+        .screen-header p {
+            font-size: 15px;
+            color: #6b7f72;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* Glass card */
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        /* ─── HAND-DRAWN STICKERS ─── */
+        .plant-sticker {
+            width: 50px;
+            height: 50px;
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transform: rotate(-2deg);
+        }
+
+        .plant-sticker__cutout {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(145deg, #dff0e4, #c5e3cc);
+            border-radius: 58% 42% 62% 38% / 42% 58% 40% 60%;
+            border: 2.5px solid var(--green-mid);
+            box-shadow:
+                1px 1px 0 0 rgba(45, 90, 66, 0.15),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+        }
+
+        .plant-sticker--mint .plant-sticker__cutout {
+            background: linear-gradient(145deg, #d4f0ec, #a8ddd6);
+            border-radius: 42% 58% 45% 55% / 55% 42% 58% 45%;
+        }
+
+        .plant-sticker--alert .plant-sticker__cutout {
+            background: linear-gradient(145deg, #ffe8dc, #ffd4c4);
+            border-color: var(--coral);
+            border-radius: 50% 45% 55% 48% / 48% 52% 45% 55%;
+        }
+
+        .plant-sticker__emoji { position: relative; z-index: 1; }
+
+        .sticker-label {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            color: var(--green-mid);
+            background: rgba(255,255,255,0.85);
+            border: 1.5px solid var(--green-soft);
+            border-radius: 40% 60% 55% 45% / 50% 45% 55% 50%;
+            transform: rotate(2deg);
+            margin-left: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .sticker-label--alert {
+            color: #c45a3a;
+            border-color: var(--coral);
+            background: #fff8f5;
+        }
+
+        .sticker-float {
+            position: absolute;
+            font-size: 22px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            pointer-events: none;
+        }
+
+        /* ─── FEED (WeChat Moments style) ─── */
+        #screen-feed {
+            background: var(--feed-bg);
+            padding-bottom: calc(var(--nav-h) + 72px);
+        }
+
+        #screen-feed .screen-header {
+            padding-bottom: 8px;
+            background: linear-gradient(180deg, #e8f2eb 0%, var(--feed-bg) 100%);
+        }
+
+        #screen-feed .screen-header h1 { font-size: 28px; }
+        #screen-feed .screen-header p { font-size: 14px; color: #8a9e8f; }
+
+        .feed-cover {
+            margin: 0 0 8px;
+            padding: 20px 20px 24px;
+            background: linear-gradient(160deg, #dceee2 0%, #f0f7f2 60%, var(--feed-bg) 100%);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .feed-cover:active { opacity: 0.92; }
+
+        .feed-cover__line {
+            font-family: var(--font-hand);
+            font-size: 22px;
+            color: var(--green-deep);
+            line-height: 1.35;
+            max-width: 78%;
+        }
+
+        .feed-cover__sub {
+            font-size: 13px;
+            color: var(--green-soft);
+            margin-top: 8px;
+        }
+
+        .feed-cover .sticker-float.s1 { top: 16px; right: 24px; transform: rotate(8deg); }
+        .feed-cover .sticker-float.s2 { bottom: 20px; right: 80px; font-size: 18px; transform: rotate(-12deg); }
+
+        .moment-list { display: flex; flex-direction: column; }
+
+        .moment {
+            background: var(--moment-bg);
+            padding: 20px 20px 16px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .moment__head {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .moment__who { flex: 1; padding-top: 2px; }
+
+        .moment__name-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .moment__name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #576b95;
+            letter-spacing: -0.2px;
+            cursor: pointer;
+        }
+
+        .moment__species {
+            font-size: 12px;
+            color: #a0a0a0;
+            font-weight: 400;
+        }
+
+        .moment__text {
+            font-size: 16px;
+            line-height: 1.65;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            letter-spacing: 0.2px;
+        }
+
+        .moment__photo {
+            width: 72%;
+            max-width: 240px;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .moment__photo-bg {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .moment__photo-bg--green { background: linear-gradient(145deg, #c8e6c9, #a5d6a7); }
+        .moment__photo-bg--mint { background: linear-gradient(145deg, #b2dfdb, #80cbc4); }
+
+        .moment__photo-cutout {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            background: rgba(255,255,255,0.9);
+            border: 1.5px solid var(--green-soft);
+            border-radius: 45% 55% 50% 50% / 55% 45% 55% 45%;
+            transform: rotate(3deg);
+            color: var(--green-mid);
+        }
+
+        .moment__meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: #b2b2b2;
+            margin-bottom: 10px;
+        }
+
+        .moment__likes {
+            font-size: 13px;
+            color: #576b95;
+            padding: 8px 0;
+            border-top: 1px solid #f0f0f0;
+            min-height: 0;
+            display: none;
+        }
+
+        .moment__likes.visible { display: block; }
+
+        .moment__actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 4px;
+            padding-top: 4px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .moment-action {
+            font-size: 13px;
+            color: #7a8f7e;
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .moment-action:active { background: rgba(92, 154, 114, 0.1); }
+
+        .moment-action.active {
+            color: #576b95;
+            font-weight: 600;
+        }
+
+        .moment-action--water {
+            color: var(--coral);
+            font-weight: 600;
+        }
+
+        /* legacy aliases */
+        .feed-list { padding: 0; display: flex; flex-direction: column; gap: 0; }
+        .feed-card { padding: 0; background: transparent; border: none; box-shadow: none; }
+        .feed-action { display: none; }
+
+        /* ─── EMERGENCY ROOM ─── */
+        #screen-er { background: linear-gradient(180deg, #faf8f4, #f2f6f3); }
+
+        .er-entry {
+            margin: 0 20px 16px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .er-entry__btn {
+            flex: 1;
+            padding: 14px 8px;
+            background: #fff;
+            border: 1.5px solid rgba(92, 154, 114, 0.2);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--green-deep);
+            cursor: pointer;
+            font-family: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .er-entry__btn span:first-child { font-size: 22px; }
+
+        .er-alert {
+            margin: 0 20px 16px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1.5px solid rgba(255, 138, 106, 0.3);
+            border-radius: var(--radius);
+        }
+
+        .er-alert__icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--coral), #ffb088);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(255, 138, 106, 0.35);
+        }
+
+        .er-alert__text strong {
+            display: block;
+            font-size: 15px;
+            color: var(--green-deep);
+            margin-bottom: 2px;
+        }
+
+        .er-alert__text span {
+            font-size: 13px;
+            color: #8a7068;
+        }
+
+        .chat-area {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-bubble {
+            max-width: 88%;
+            padding: 14px 16px;
+            border-radius: 20px;
+            font-size: 15px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .chat-bubble--user {
+            align-self: flex-end;
+            background: var(--green-deep);
+            color: #fff;
+            border-bottom-right-radius: 6px;
+        }
+
+        .chat-bubble--ai {
+            align-self: flex-start;
+            background: #fff;
+            border: 1px solid rgba(92, 154, 114, 0.15);
+            color: var(--green-deep);
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 2px 12px rgba(26, 61, 46, 0.06);
+        }
+
+        .chat-bubble--ai .chat-bubble__persona {
+            font-size: 12px;
+            color: var(--green-soft);
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .chat-bubble__label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--green-soft);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .chat-image {
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-image--ai {
+            background: rgba(92, 154, 114, 0.1);
+            color: var(--green-mid);
+        }
+
+        .er-suggestions {
+            margin: 16px 20px 0;
+            padding: 18px;
+        }
+
+        .er-suggestions h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--green-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 14px;
+            border-radius: var(--radius-pill);
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(92, 154, 114, 0.2);
+            color: var(--green-deep);
+            cursor: pointer;
+            transition: transform 0.15s, background 0.15s;
+            font-family: inherit;
+        }
+
+        .chip:active {
+            transform: scale(0.95);
+            background: rgba(92, 154, 114, 0.15);
+        }
+
+        /* ─── JOURNAL (CapWords scrapbook) ─── */
+        #screen-journal {
+            background: var(--paper);
+            background-image:
+                linear-gradient(var(--paper-line) 1px, transparent 1px);
+            background-size: 100% 28px;
+        }
+
+        #screen-journal .screen-header {
+            background: rgba(245, 240, 232, 0.95);
+        }
+
+        .journal-plant-picker {
+            display: flex;
+            gap: 10px;
+            padding: 0 20px 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .journal-plant-picker::-webkit-scrollbar { display: none; }
+
+        .plant-chip {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px 8px 10px;
+            border-radius: 40% 60% 50% 50% / 50% 45% 55% 50%;
+            background: rgba(255,255,255,0.7);
+            border: 2px solid rgba(92, 154, 114, 0.25);
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7f72;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            transform: rotate(-1deg);
+        }
+
+        .plant-chip.active {
+            background: var(--green-deep);
+            color: #fff;
+            border-color: var(--green-deep);
+            transform: rotate(1deg);
+            box-shadow: 3px 3px 0 rgba(26, 61, 46, 0.15);
+        }
+
+        .plant-chip__emoji { font-size: 20px; }
+
+        .journal-scrapbook {
+            padding: 0 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .scrapbook-page {
+            position: relative;
+            padding: 20px 16px 24px;
+            background: rgba(255, 252, 247, 0.92);
+            border: 1px solid rgba(92, 154, 114, 0.12);
+            box-shadow: 2px 4px 16px rgba(26, 61, 46, 0.06);
+            transform: rotate(0.5deg);
+        }
+
+        .scrapbook-tape {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-1deg);
+            width: 64px;
+            height: 18px;
+            background: rgba(255, 235, 180, 0.75);
+            border: 1px solid rgba(200, 170, 100, 0.3);
+        }
+
+        .memory-card {
+            padding: 0;
+            overflow: visible;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.15s;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .memory-card:active { transform: scale(0.98) rotate(0deg); }
+
+        .memory-card__inner {
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1.5px dashed rgba(92, 154, 114, 0.25);
+            position: relative;
+        }
+
+        .memory-card:nth-child(odd) .memory-card__inner { transform: rotate(-1.2deg); }
+        .memory-card:nth-child(even) .memory-card__inner { transform: rotate(0.8deg); }
+
+        .memory-card__cutout {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 10px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .memory-card__cutout::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #e8f5e9;
+            border: 2px solid var(--green-soft);
+            border-radius: 55% 45% 60% 40% / 45% 55% 40% 60%;
+        }
+
+        .memory-card__cutout span { position: relative; z-index: 1; }
+
+        .memory-card__date {
+            font-family: var(--font-hand);
+            font-size: 15px;
+            color: var(--green-mid);
+            margin-bottom: 4px;
+        }
+
+        .memory-card__badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 45% 55% 50% 50% / 50% 45% 55% 50%;
+            background: rgba(92, 154, 114, 0.12);
+            color: var(--green-mid);
+            margin-bottom: 8px;
+            border: 1.5px solid rgba(92, 154, 114, 0.2);
+        }
+
+        .memory-card__badge--grow { background: rgba(255, 209, 102, 0.2); color: #9a7209; border-color: rgba(255, 209, 102, 0.4); }
+        .memory-card__badge--move { background: rgba(255, 138, 106, 0.15); color: #c45a3a; border-color: rgba(255, 138, 106, 0.3); }
+        .memory-card__badge--water { background: rgba(168, 216, 234, 0.25); color: #3a7ca5; border-color: rgba(168, 216, 234, 0.4); }
+
+        .memory-card__title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--green-deep);
+            letter-spacing: -0.3px;
+            margin-bottom: 6px;
+        }
+
+        .memory-card__desc {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #5a6e60;
+        }
+
+        .memory-card__note {
+            font-family: var(--font-hand);
+            font-size: 14px;
+            color: var(--green-soft);
+            margin-top: 10px;
+            transform: rotate(-1deg);
+        }
+
+        .memory-card__sticker {
+            position: absolute;
+            top: -8px;
+            right: 8px;
+            font-size: 26px;
+            transform: rotate(12deg);
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+        }
+
+        .memory-card__accent { display: none; }
+
+        /* ─── ANNUAL REPORT ─── */
+        #screen-report {
+            background: linear-gradient(180deg, #1a3d2e 0%, #2d5a42 35%, #1a3d2e 100%);
+            padding-bottom: calc(var(--nav-h) + 72px);
+        }
+
+        #screen-report .screen-header h1 { color: #fff; }
+        #screen-report .screen-header p { color: rgba(255,255,255,0.65); }
+        #screen-report .screen-header__tag {
+            background: rgba(255,255,255,0.15);
+            color: var(--green-glow);
+        }
+
+        .wrapped-hero {
+            margin: 0 20px 24px;
+            text-align: center;
+            padding: 32px 20px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wrapped-hero::before {
+            content: "✨";
+            position: absolute;
+            font-size: 48px;
+            top: -8px;
+            left: 20px;
+            opacity: 0.6;
+        }
+
+        .wrapped-hero::after {
+            content: "🌿";
+            position: absolute;
+            font-size: 40px;
+            bottom: 8px;
+            right: 24px;
+            opacity: 0.6;
+        }
+
+        .wrapped-year {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--green-glow);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .wrapped-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -1.5px;
+            line-height: 1.05;
+            margin-bottom: 8px;
+        }
+
+        .wrapped-sub {
+            font-size: 15px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .stat-cards {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stat-card {
+            padding: 22px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: var(--radius);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:active { transform: scale(0.98); }
+
+        .stat-card__emoji {
+            font-size: 36px;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            flex-shrink: 0;
+        }
+
+        .stat-card__value {
+            font-size: 32px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .stat-card__label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.65);
+            margin-top: 4px;
+            line-height: 1.3;
+        }
+
+        .stat-card--highlight {
+            background: linear-gradient(135deg, rgba(143, 212, 168, 0.3), rgba(255, 209, 102, 0.15));
+            border-color: rgba(143, 212, 168, 0.3);
+        }
+
+        .share-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px 20px 0;
+            padding: 16px;
+            background: #fff;
+            color: var(--green-deep);
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            transition: transform 0.15s;
+        }
+
+        .share-btn:active { transform: scale(0.96); }
+
+        /* Bottom nav */
+        .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 30;
+            height: var(--nav-h);
+            padding: 8px 12px calc(var(--safe-bottom) - 10px);
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border-top: 1px solid rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-around;
+        }
+
+        .tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px 12px;
+            font-family: inherit;
+            transition: transform 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tab:active { transform: scale(0.9); }
+
+        .tab__icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            border-radius: 10px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .tab.active .tab__icon {
+            background: rgba(92, 154, 114, 0.18);
+            transform: scale(1.08);
+        }
+
+        .tab__label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #9aaea0;
+            letter-spacing: -0.2px;
+            transition: color 0.2s;
+        }
+
+        .tab.active .tab__label { color: var(--green-deep); }
+
+        #screen-report ~ .tab-bar,
+        .phone:has(#screen-report.active) .tab-bar {
+            background: rgba(26, 61, 46, 0.85);
+            border-top-color: rgba(255,255,255,0.1);
+        }
+
+        .phone.report-active .tab-bar {
+            background: rgba(26, 61, 46, 0.88);
+            border-top-color: rgba(255,255,255,0.1);
+        }
+
+        .phone.report-active .tab__label { color: rgba(255,255,255,0.45); }
+        .phone.report-active .tab.active .tab__label { color: var(--green-glow); }
+        .phone.report-active .tab.active .tab__icon { background: rgba(143, 212, 168, 0.2); }
+        .phone.report-active .status-bar { color: #fff; }
+
+        /* FAB */
+        .fab {
+            position: absolute;
+            bottom: calc(var(--nav-h) + 12px);
+            right: 20px;
+            z-index: 25;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-soft), var(--green-mid));
+            color: #fff;
+            border: none;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(45, 90, 66, 0.45);
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+            line-height: 1;
+        }
+
+        .fab:active {
+            transform: scale(0.9);
+            box-shadow: 0 4px 16px rgba(45, 90, 66, 0.35);
+        }
+
+        .fab.hidden { display: none; }
+
+        /* Home indicator */
+        .home-indicator {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 134px;
+            height: 5px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        .phone.report-active .home-indicator {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Sub-screens */
+        .overlay-stack {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .sub-screen {
+            position: absolute;
+            inset: 0;
+            background: var(--cream);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        .sub-screen.open { transform: translateX(0); z-index: 2; }
+
+        .sub-screen--dark { background: linear-gradient(180deg, #1a3d2e, #2d5a42); }
+
+        .sub-screen__scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 32px;
+        }
+
+        .sub-screen__scroll::-webkit-scrollbar { display: none; }
+
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px 12px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 5;
+        }
+
+        .nav-bar__back {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            font-size: 17px;
+            color: var(--green-soft);
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            padding: 8px 4px;
+        }
+
+        .sub-screen--dark .nav-bar__back { color: var(--green-glow); }
+
+        .nav-bar__title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--green-deep);
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .sub-screen--dark .nav-bar__title { color: #fff; }
+
+        .nav-bar__action {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--green-soft);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            padding: 8px;
+        }
+
+        .nav-bar__action:disabled { opacity: 0.35; }
+
+        /* Reply screen */
+        .reply-context {
+            margin: 0 20px 16px;
+            padding: 14px;
+        }
+
+        .reply-context__label {
+            font-size: 12px;
+            color: var(--green-soft);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .reply-messages {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 200px;
+        }
+
+        .reply-input-bar {
+            padding: 12px 16px 28px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(12px);
+            flex-shrink: 0;
+        }
+
+        .reply-input {
+            flex: 1;
+            border: 1px solid rgba(92, 154, 114, 0.25);
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+            min-height: 40px;
+            max-height: 100px;
+            outline: none;
+            background: #fff;
+        }
+
+        .reply-input:focus { border-color: var(--green-soft); }
+
+        .reply-send {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--green-mid);
+            color: #fff;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
+            font-family: inherit;
+        }
+
+        .reply-send:disabled { opacity: 0.4; }
+
+        /* Water flow */
+        .water-hero {
+            margin: 0 20px 20px;
+            padding: 28px 20px;
+            text-align: center;
+        }
+
+        .water-hero__emoji { font-size: 64px; margin-bottom: 12px; }
+
+        .water-hero h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--green-deep);
+            letter-spacing: -0.5px;
+        }
+
+        .water-steps {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .water-step {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .water-step.done { opacity: 0.55; }
+
+        .water-step__num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(92, 154, 114, 0.15);
+            color: var(--green-mid);
+            font-weight: 700;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .water-step.done .water-step__num {
+            background: var(--green-soft);
+            color: #fff;
+        }
+
+        .water-step__text { font-size: 15px; color: var(--green-deep); font-weight: 500; }
+
+        .primary-btn {
+            display: block;
+            margin: 24px 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--green-soft), var(--green-mid));
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            font-family: inherit;
+            width: calc(100% - 40px);
+        }
+
+        .primary-btn:disabled { opacity: 0.4; }
+
+        /* Hug / success */
+        .success-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 32px;
+            text-align: center;
+        }
+
+        .success-emoji {
+            font-size: 80px;
+            animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .success-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--green-deep);
+            margin-top: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .success-desc {
+            font-size: 16px;
+            color: #6b7f72;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        /* Capture */
+        .capture-preview {
+            margin: 0 20px 16px;
+            height: 200px;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, #d4e8d4, #a8d5ba);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .capture-preview__label {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(0,0,0,0.4);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+        }
+
+        .form-group {
+            padding: 0 20px;
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--green-mid);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-select, .form-textarea {
+            width: 100%;
+            border: 1px solid rgba(92, 154, 114, 0.25);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 16px;
+            font-family: inherit;
+            background: #fff;
+            outline: none;
+        }
+
+        .form-textarea { min-height: 80px; resize: vertical; }
+
+        /* Memory detail */
+        .detail-hero {
+            margin: 0 20px 16px;
+            padding: 24px;
+        }
+
+        .detail-hero__date {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--green-soft);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .detail-hero h2 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--green-deep);
+            margin: 8px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .detail-body {
+            padding: 0 20px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #5a6e60;
+        }
+
+        .detail-related {
+            margin: 20px 20px 0;
+            padding: 16px;
+        }
+
+        .detail-related h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--green-mid);
+            margin-bottom: 10px;
+        }
+
+        .detail-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--green-deep);
+        }
+
+        /* Stat detail */
+        .stat-detail-hero {
+            padding: 32px 20px;
+            text-align: center;
+        }
+
+        .stat-detail-value {
+            font-size: 72px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -3px;
+            line-height: 1;
+        }
+
+        .stat-detail-label {
+            font-size: 18px;
+            color: rgba(255,255,255,0.7);
+            margin-top: 8px;
+        }
+
+        .stat-insights {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .insight-row {
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .insight-row__icon { font-size: 24px; }
+
+        .insight-row__text {
+            font-size: 14px;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.5;
+        }
+
+        /* Share report */
+        .share-card-preview {
+            margin: 0 20px 20px;
+            padding: 28px 20px;
+            text-align: center;
+            background: linear-gradient(145deg, #2d5a42, #1a3d2e);
+            border-radius: 24px;
+            color: #fff;
+        }
+
+        .share-card-preview h3 {
+            font-size: 22px;
+            font-weight: 800;
+            margin: 12px 0 4px;
+        }
+
+        .share-options {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: #fff;
+            border: 1px solid var(--color-border, #e1e8e2);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--green-deep);
+            width: 100%;
+            text-align: left;
+        }
+
+        .share-option__icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: rgba(92, 154, 114, 0.12);
+        }
+
+        /* Modals */
+        .modal-backdrop {
+            position: absolute;
+            inset: 0;
+            z-index: 60;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: flex-end;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-sheet {
+            width: 100%;
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding: 12px 20px calc(var(--safe-bottom) + 12px);
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            max-height: 85%;
+            overflow-y: auto;
+        }
+
+        .modal-backdrop.open .modal-sheet { transform: translateY(0); }
+
+        .modal-handle {
+            width: 36px;
+            height: 5px;
+            background: #ddd;
+            border-radius: 3px;
+            margin: 0 auto 16px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--green-deep);
+            margin-bottom: 8px;
+        }
+
+        .modal-desc {
+            font-size: 14px;
+            color: #6b7f72;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        .modal-btn--primary {
+            background: var(--green-mid);
+            color: #fff;
+        }
+
+        .modal-btn--secondary {
+            background: rgba(92, 154, 114, 0.12);
+            color: var(--green-deep);
+        }
+
+        .modal-btn--ghost {
+            background: none;
+            color: #8a9e8f;
+        }
+
+        .reminder-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .reminder-option {
+            padding: 14px 16px;
+            border: 1.5px solid rgba(92, 154, 114, 0.2);
+            border-radius: var(--radius-sm);
+            background: #fff;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--green-deep);
+            cursor: pointer;
+            font-family: inherit;
+            text-align: left;
+            transition: all 0.15s;
+        }
+
+        .reminder-option.selected {
+            border-color: var(--green-soft);
+            background: rgba(92, 154, 114, 0.1);
+        }
+
+        .checklist { margin-bottom: 16px; }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            cursor: pointer;
+        }
+
+        .checklist-item__box {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--green-soft);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .checklist-item.checked .checklist-item__box {
+            background: var(--green-soft);
+            color: #fff;
+        }
+
+        /* Toast */
+        .toast {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: var(--green-deep);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: var(--radius-pill);
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 70;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            white-space: nowrap;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Interactive elements */
+        .feed-action.active-action { color: var(--green-mid); font-weight: 700; }
+
+        .memory-card { cursor: pointer; transition: transform 0.15s; }
+        .memory-card:active { transform: scale(0.98); }
+
+        .stat-card { cursor: pointer; }
+        .stat-card button { all: unset; display: flex; align-items: center; gap: 16px; width: 100%; cursor: pointer; }
+
+        .er-alert { cursor: pointer; transition: transform 0.15s; }
+        .er-alert:active { transform: scale(0.98); }
+
+        .chip.done {
+            background: rgba(92, 154, 114, 0.2);
+            border-color: var(--green-soft);
+            color: var(--green-mid);
+        }
+
+        .journal-list { display: flex; flex-direction: column; gap: 16px; }
+        .journal-list[hidden] { display: none; }
+
+        .feed-card__top--link { cursor: pointer; }
+
+        /* Onboarding */
+        .onboard-hero {
+            text-align: center;
+            padding: 40px 28px 24px;
+        }
+
+        .onboard-hero h2 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--green-deep);
+            letter-spacing: -0.5px;
+            line-height: 1.25;
+            margin-top: 16px;
+        }
+
+        .onboard-hero p {
+            font-size: 15px;
+            color: #6b7f72;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        .onboard-options {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .onboard-option {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            text-align: left;
+            width: 100%;
+            font-family: inherit;
+            background: #fff;
+            border: 1.5px solid rgba(92, 154, 114, 0.15);
+            border-radius: var(--radius);
+        }
+
+        .onboard-option__icon {
+            font-size: 32px;
+            width: 52px;
+            text-align: center;
+        }
+
+        .onboard-option strong {
+            display: block;
+            font-size: 16px;
+            color: var(--green-deep);
+        }
+
+        .onboard-option span {
+            font-size: 13px;
+            color: #8a9e8f;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            white-space: nowrap;
+        }
+
+        .status-pill--ok { background: rgba(92, 154, 114, 0.18); color: var(--green-mid); }
+        .status-pill--alert { background: rgba(255, 138, 106, 0.2); color: #d4533a; }
+    </style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+    <div class="ambient">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="status-bar">
+        <span class="status-bar__time" id="clock">9:41</span>
+        <span class="status-bar__icons">
+            <span>●●●●</span>
+            <span>WiFi</span>
+            <span>🔋</span>
+        </span>
+    </div>
+
+    <div class="screens">
+        <!-- FEED -->
+        <section class="screen active" id="screen-feed" aria-label="Plant Feed">
+            <header class="screen-header">
+                <span class="screen-header__tag">🌿 植物朋友圈</span>
+                <h1>动态</h1>
+                <p>它们像好友一样，生活在你的身边</p>
+            </header>
+
+            <div class="feed-cover" data-action="open-feed-info" role="button" tabindex="0">
+                <span class="sticker-float s1">🌿</span>
+                <span class="sticker-float s2">✨</span>
+                <p class="feed-cover__line">你的植物，有话要对你说</p>
+                <p class="feed-cover__sub" id="feed-sub">2 位伙伴更新了动态</p>
+            </div>
+
+            <div class="moment-list" id="moment-list">
+                <article class="moment" id="card-dalv">
+                    <div class="moment__head">
+                        <div class="plant-sticker" data-action="plant-profile" data-plant="dalv">
+                            <div class="plant-sticker__cutout"></div>
+                            <span class="plant-sticker__emoji">🌿</span>
+                        </div>
+                        <div class="moment__who">
+                            <div class="moment__name-row">
+                                <span class="moment__name" data-action="plant-profile" data-plant="dalv">大绿</span>
+                                <span class="sticker-label">长新叶</span>
+                            </div>
+                            <span class="moment__species">琴叶榕 · 客厅书桌</span>
+                        </div>
+                    </div>
+                    <p class="moment__text" id="dalv-body">今天长出了新叶，好像又更靠近阳光了一点 🌿 早上的光斜照进来，每个细胞都在努力张开呼吸～</p>
+                    <div class="moment__photo" data-action="plant-profile" data-plant="dalv">
+                        <div class="moment__photo-bg moment__photo-bg--green">🌿</div>
+                        <span class="moment__photo-cutout">新叶!</span>
+                    </div>
+                    <div class="moment__meta">
+                        <time>今天 10:24</time>
+                        <span>☀️ 光合作用中</span>
+                    </div>
+                    <div class="moment__likes" id="likes-dalv"></div>
+                    <div class="moment__actions">
+                        <button class="moment-action" type="button" data-action="like" data-plant="dalv" id="btn-like-dalv">♡ 关注</button>
+                        <button class="moment-action" type="button" data-action="reply" data-plant="dalv">💬 对话</button>
+                        <button class="moment-action" type="button" data-action="favorite" data-plant="dalv">☆ 收藏</button>
+                    </div>
+                </article>
+
+                <article class="moment" id="card-suisui">
+                    <div class="moment__head">
+                        <div class="plant-sticker plant-sticker--mint" id="sticker-suisui" data-action="plant-profile" data-plant="suisui">
+                            <div class="plant-sticker__cutout"></div>
+                            <span class="plant-sticker__emoji">🌱</span>
+                        </div>
+                        <div class="moment__who">
+                            <div class="moment__name-row">
+                                <span class="moment__name" data-action="plant-profile" data-plant="suisui">碎碎</span>
+                                <span class="sticker-label sticker-label--alert" id="suisui-label">口渴</span>
+                            </div>
+                            <span class="moment__species">薄荷 · 阳台挂架</span>
+                        </div>
+                    </div>
+                    <p class="moment__text" id="suisui-body">这两天有点干渴，可以帮我喝点水吗？太阳太热情了，叶子悄悄卷起来了……</p>
+                    <div class="moment__photo" data-action="plant-profile" data-plant="suisui">
+                        <div class="moment__photo-bg moment__photo-bg--mint">🌱</div>
+                        <span class="moment__photo-cutout">卷叶</span>
+                    </div>
+                    <div class="moment__meta">
+                        <time>1 小时前</time>
+                        <span id="suisui-status">💧 需要浇水</span>
+                    </div>
+                    <div class="moment__likes" id="likes-suisui"></div>
+                    <div class="moment__actions">
+                        <button class="moment-action moment-action--water" type="button" data-action="water" data-plant="suisui">💧 浇水</button>
+                        <button class="moment-action" type="button" data-action="reply" data-plant="suisui">💬 对话</button>
+                        <button class="moment-action" type="button" data-action="favorite" data-plant="suisui">☆ 收藏</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- EMERGENCY ROOM -->
+        <section class="screen" id="screen-er" aria-label="Plant Emergency Room">
+            <header class="screen-header">
+                <span class="screen-header__tag">🩺 植物急诊室</span>
+                <h1>一起帮它</h1>
+                <p>像朋友一样，陪它度过难关</p>
+            </header>
+
+            <div class="er-entry">
+                <button class="er-entry__btn" type="button" data-action="er-photo"><span>📷</span>拍照</button>
+                <button class="er-entry__btn" type="button" data-action="er-voice"><span>🎙️</span>语音</button>
+                <button class="er-entry__btn" type="button" data-action="er-text"><span>💬</span>文字</button>
+            </div>
+
+            <div class="er-alert" data-action="er-detail" role="button" tabindex="0">
+                <div class="er-alert__icon">🌿</div>
+                <div class="er-alert__text">
+                    <strong>大绿 · 叶片发黄</strong>
+                    <span>我们一起帮它看看 →</span>
+                </div>
+            </div>
+
+            <div class="chat-area" id="er-chat">
+                <div class="chat-bubble chat-bubble--user">
+                    <div class="chat-image">📷 琴叶榕下部叶片发黄、边缘微卷</div>
+                    大绿最近底部的几片叶子开始发黄脱落了，我是不是浇水太多了？
+                </div>
+                <div class="chat-bubble chat-bubble--ai">
+                    <div class="chat-bubble__label">🌱 植物朋友 · AI 转译</div>
+                    <p class="chat-bubble__persona">"它最近有点呼吸不过来，我们一起帮帮它吧。"</p>
+                    从你拍的照片来看，大绿底部的叶片发黄，边缘没有焦枯，主干微微发软——这通常是根部泡在水里太久啦。
+                    <br><br>
+                    我们试试：接下来两周少浇水，把它搬到通风好的窗边。我会帮你盯着天气变化，别担心，它很顽强的 💚
+                </div>
+            </div>
+
+            <div class="er-suggestions glass">
+                <h3>快速操作</h3>
+                <div class="suggestion-chips">
+                    <button class="chip" type="button" data-action="care-pause" id="chip-pause">暂停浇水 2 周</button>
+                    <button class="chip" type="button" data-action="care-move" id="chip-move">移至通风处</button>
+                    <button class="chip" type="button" data-action="care-reminder">设置提醒</button>
+                    <button class="chip" type="button" data-action="capture" data-plant="dalv" data-from="er">拍照记录</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- JOURNAL -->
+        <section class="screen" id="screen-journal" aria-label="Plant Journal">
+            <header class="screen-header">
+                <span class="screen-header__tag">📔 植物手帐</span>
+                <h1>成长时间轴</h1>
+                <p>拼贴式日记 · 记录它的植物人生</p>
+            </header>
+
+            <div class="journal-plant-picker">
+                <button class="plant-chip active" type="button" data-journal-plant="dalv">
+                    <span class="plant-chip__emoji">🌿</span> 大绿
+                </button>
+                <button class="plant-chip" type="button" data-journal-plant="suisui">
+                    <span class="plant-chip__emoji">🌱</span> 碎碎
+                </button>
+            </div>
+
+            <div class="journal-scrapbook">
+                <div class="scrapbook-page" id="scrapbook-dalv">
+                    <div class="scrapbook-tape"></div>
+                    <div class="journal-list" id="journal-dalv">
+                        <article class="memory-card" data-action="memory" data-id="grow-0615">
+                            <span class="memory-card__sticker">🌟</span>
+                            <div class="memory-card__inner">
+                                <div class="memory-card__cutout"><span>🌿</span></div>
+                                <div class="memory-card__date">6月15日</div>
+                                <span class="memory-card__badge memory-card__badge--grow">发芽 · 长新叶</span>
+                                <h3 class="memory-card__title">顶端萌发新叶芽</h3>
+                                <p class="memory-card__desc">AI 识别到全新嫩绿叶芽，成长进度超越同类 85%。</p>
+                                <p class="memory-card__note">← 今天好开心！</p>
+                            </div>
+                        </article>
+                        <article class="memory-card" data-action="memory" data-id="move-0601">
+                            <span class="memory-card__sticker">🏠</span>
+                            <div class="memory-card__inner">
+                                <div class="memory-card__cutout"><span>☀️</span></div>
+                                <div class="memory-card__date">6月1日</div>
+                                <span class="memory-card__badge memory-card__badge--move">换位置</span>
+                                <h3 class="memory-card__title">搬到向阳书桌</h3>
+                                <p class="memory-card__desc">光合辐射提升 240%，呼吸律动趋于平稳。</p>
+                                <p class="memory-card__note">新家阳光真好～</p>
+                            </div>
+                        </article>
+                        <article class="memory-card" data-action="memory" data-id="water-0520">
+                            <span class="memory-card__sticker">💧</span>
+                            <div class="memory-card__inner">
+                                <div class="memory-card__cutout"><span>💧</span></div>
+                                <div class="memory-card__date">5月20日</div>
+                                <span class="memory-card__badge memory-card__badge--water">浇水</span>
+                                <h3 class="memory-card__title">第 4 次深度浇水</h3>
+                                <p class="memory-card__desc">土壤湿度完美回归基准线。</p>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+                <div class="scrapbook-page" id="scrapbook-suisui" hidden>
+                    <div class="scrapbook-tape"></div>
+                    <div class="journal-list" id="journal-suisui">
+                        <article class="memory-card" data-action="memory" data-id="thirst-0618">
+                            <span class="memory-card__sticker">☀️</span>
+                            <div class="memory-card__inner">
+                                <div class="memory-card__cutout"><span>🌱</span></div>
+                                <div class="memory-card__date">6月18日</div>
+                                <span class="memory-card__badge memory-card__badge--move">状态变化</span>
+                                <h3 class="memory-card__title">烈日下叶片卷曲</h3>
+                                <p class="memory-card__desc">碎碎开始卷叶求救，已推送动态提醒。</p>
+                                <p class="memory-card__note">好渴……</p>
+                            </div>
+                        </article>
+                        <article class="memory-card" data-action="memory" data-id="plant-0501">
+                            <span class="memory-card__sticker">🎉</span>
+                            <div class="memory-card__inner">
+                                <div class="memory-card__cutout"><span>🌱</span></div>
+                                <div class="memory-card__date">5月1日</div>
+                                <span class="memory-card__badge memory-card__badge--grow">入户</span>
+                                <h3 class="memory-card__title">碎碎来到阳台</h3>
+                                <p class="memory-card__desc">第一盆薄荷入驻，开启清新陪伴之旅。</p>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ANNUAL REPORT -->
+        <section class="screen" id="screen-report" aria-label="Annual Report">
+            <header class="screen-header">
+                <span class="screen-header__tag">✨ 年度故事</span>
+                <h1>植物人生报告</h1>
+                <p>你和它一起走过的每一天</p>
+            </header>
+
+            <div class="wrapped-hero">
+                <div class="wrapped-year">2025 — 2026</div>
+                <h2 class="wrapped-title">你们的故事<br>比想象中<br>更深刻</h2>
+                <p class="wrapped-sub">大绿的成长故事 · 可分享海报</p>
+            </div>
+
+            <div class="stat-cards">
+                <div class="stat-card stat-card--highlight">
+                    <button type="button" data-action="stat" data-stat="days">
+                        <div class="stat-card__emoji">🌿</div>
+                        <div>
+                            <div class="stat-card__value">365 天</div>
+                            <div class="stat-card__label">陪伴时间最长 · 琴叶榕</div>
+                        </div>
+                    </button>
+                </div>
+                <div class="stat-card">
+                    <button type="button" data-action="stat" data-stat="leaves">
+                        <div class="stat-card__emoji">🍃</div>
+                        <div>
+                            <div class="stat-card__value">12 片</div>
+                            <div class="stat-card__label">见证新叶诞生</div>
+                        </div>
+                    </button>
+                </div>
+                <div class="stat-card">
+                    <button type="button" data-action="stat" data-stat="chats">
+                        <div class="stat-card__emoji">💬</div>
+                        <div>
+                            <div class="stat-card__value">1,240 次</div>
+                            <div class="stat-card__label">人植情感对话交互</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <button class="share-btn" type="button" data-action="share-report">↗ 分享我的植物年度报告</button>
+        </section>
+    </div>
+
+    <button class="fab" id="fab" type="button" aria-label="Capture moment" data-action="capture">+</button>
+
+    <!-- Sub-screens -->
+    <div class="overlay-stack" id="overlay-stack">
+        <!-- Reply -->
+        <div class="sub-screen" id="sub-reply">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title" id="reply-title">回复</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="reply-context glass">
+                <div class="reply-context__label">正在回复</div>
+                <div id="reply-plant-post" class="feed-card__body" style="margin:0;border-left-color:var(--green-glow)"></div>
+            </div>
+            <div class="reply-messages" id="reply-messages"></div>
+            <div class="reply-input-bar">
+                <textarea class="reply-input" id="reply-input" rows="1" placeholder="跟它说点什么…"></textarea>
+                <button class="reply-send" id="reply-send" type="button" disabled>↑</button>
+            </div>
+        </div>
+
+        <!-- Hug / Like success -->
+        <div class="sub-screen" id="sub-hug">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title">今天也在关注你</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="success-center">
+                <div class="success-emoji" id="hug-emoji">♡</div>
+                <h2 class="success-title" id="hug-title">你关注了 ta</h2>
+                <p class="success-desc" id="hug-desc">植物感受到了你的陪伴</p>
+                <button class="primary-btn" type="button" data-back style="margin-top:32px">回到朋友圈</button>
+            </div>
+        </div>
+
+        <!-- Onboarding -->
+        <div class="sub-screen open" id="sub-onboard">
+            <div class="sub-screen__scroll">
+                <div class="onboard-hero">
+                    <div class="plant-sticker" style="margin:0 auto;transform:rotate(-4deg)">
+                        <div class="plant-sticker__cutout"></div>
+                        <span class="plant-sticker__emoji">🌿</span>
+                    </div>
+                    <h2>和植物一起生活</h2>
+                    <p>拍照识别或创建档案，AI 会为它建立独特的人格与表达能力</p>
+                </div>
+                <div class="onboard-options">
+                    <button class="onboard-option" type="button" data-action="onboard-photo">
+                        <span class="onboard-option__icon">📷</span>
+                        <div><strong>拍照识别植物</strong><span>AI 自动建立档案与人格</span></div>
+                    </button>
+                    <button class="onboard-option" type="button" data-action="onboard-manual">
+                        <span class="onboard-option__icon">✏️</span>
+                        <div><strong>手动创建档案</strong><span>为它取名字，定义性格</span></div>
+                    </button>
+                    <button class="onboard-option" type="button" data-action="onboard-skip" style="opacity:0.7">
+                        <span class="onboard-option__icon">👋</span>
+                        <div><strong>先看看朋友圈</strong><span>已有 大绿 和 碎碎 在等你</span></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water flow -->
+        <div class="sub-screen" id="sub-water">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title">浇水</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="sub-screen__scroll">
+                <div class="water-hero glass">
+                    <div class="water-hero__emoji">🌱</div>
+                    <h2>给碎碎浇水</h2>
+                    <p style="color:#6b7f72;margin-top:6px;font-size:14px">它正在等你～</p>
+                </div>
+                <div class="water-steps" id="water-steps">
+                    <div class="water-step glass" data-step="0">
+                        <div class="water-step__num">1</div>
+                        <div class="water-step__text">用手触摸土壤，确认干燥</div>
+                    </div>
+                    <div class="water-step glass" data-step="1">
+                        <div class="water-step__num">2</div>
+                        <div class="water-step__text">缓慢浇透，直到盆底渗水</div>
+                    </div>
+                    <div class="water-step glass" data-step="2">
+                        <div class="water-step__num">3</div>
+                        <div class="water-step__text">倒掉托盘积水，保持通风</div>
+                    </div>
+                </div>
+                <button class="primary-btn" id="water-complete" type="button" disabled>完成浇水</button>
+            </div>
+        </div>
+
+        <!-- Capture moment -->
+        <div class="sub-screen" id="sub-capture">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title">记录瞬间</span>
+                <button class="nav-bar__action" id="capture-save" type="button" disabled>保存</button>
+            </div>
+            <div class="sub-screen__scroll">
+                <div class="capture-preview" id="capture-preview">
+                    📷
+                    <span class="capture-preview__label" id="capture-label">点击模拟拍照</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">选择植物</label>
+                    <select class="form-select" id="capture-plant">
+                        <option value="dalv">🌿 大绿 · 琴叶榕</option>
+                        <option value="suisui">🌱 碎碎 · 薄荷</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">这一刻的故事</label>
+                    <textarea class="form-textarea" id="capture-note" placeholder="记录你和植物的小瞬间…"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Memory detail -->
+        <div class="sub-screen" id="sub-memory">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title">记忆详情</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="sub-screen__scroll">
+                <div class="detail-hero glass">
+                    <div class="detail-hero__date" id="mem-date"></div>
+                    <span class="memory-card__badge" id="mem-badge"></span>
+                    <h2 id="mem-title"></h2>
+                </div>
+                <div class="detail-body" id="mem-body"></div>
+                <div class="detail-related glass">
+                    <h4>相关动态</h4>
+                    <button class="detail-link" type="button" id="mem-goto-feed">→ 查看对应动态</button>
+                    <button class="detail-link" type="button" id="mem-goto-plant">→ 查看植物档案</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat detail -->
+        <div class="sub-screen sub-screen--dark" id="sub-stat">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title" style="color:#fff" id="stat-nav-title">数据详情</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="sub-screen__scroll">
+                <div class="stat-detail-hero">
+                    <div class="stat-detail-value" id="stat-value"></div>
+                    <div class="stat-detail-label" id="stat-label"></div>
+                </div>
+                <div class="stat-insights" id="stat-insights"></div>
+                <button class="share-btn" type="button" data-action="share-stat" style="margin-top:24px">↗ 分享这项成就</button>
+            </div>
+        </div>
+
+        <!-- Share report -->
+        <div class="sub-screen" id="sub-share-report">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title">分享年报</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="sub-screen__scroll">
+                <div class="share-card-preview">
+                    <div style="font-size:14px;opacity:0.7;letter-spacing:2px">FLORAE 2026</div>
+                    <h3>我和大绿的 365 天</h3>
+                    <p style="opacity:0.8;font-size:14px;margin-top:4px">12 片新叶 · 1,240 次对话</p>
+                </div>
+                <div class="share-options">
+                    <button class="share-option" type="button" data-share="story">
+                        <span class="share-option__icon">📱</span> 生成 Story 卡片
+                    </button>
+                    <button class="share-option" type="button" data-share="copy">
+                        <span class="share-option__icon">🔗</span> 复制分享链接
+                    </button>
+                    <button class="share-option" type="button" data-share="save">
+                        <span class="share-option__icon">💾</span> 保存到相册
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plant profile -->
+        <div class="sub-screen" id="sub-profile">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title" id="profile-title">植物档案</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="sub-screen__scroll">
+                <div class="water-hero glass" style="margin-bottom:16px">
+                    <div class="water-hero__emoji" id="profile-emoji">🌿</div>
+                    <h2 id="profile-name">大绿</h2>
+                    <p id="profile-species" style="color:#6b7f72;margin-top:4px">琴叶榕</p>
+                </div>
+                <div class="form-group">
+                    <div class="glass" style="padding:16px">
+                        <div class="form-label">性格</div>
+                        <p id="profile-personality" style="font-size:15px;color:#5a6e60;font-family:var(--font-hand)"></p>
+                        <div class="form-label" style="margin-top:14px">当前状态</div>
+                        <p id="profile-status" style="font-size:15px;color:var(--green-deep);font-weight:600"></p>
+                        <div class="form-label" style="margin-top:14px">位置</div>
+                        <p id="profile-location" style="font-size:15px;color:#5a6e60"></p>
+                    </div>
+                </div>
+                <button class="primary-btn" type="button" id="profile-journal">查看成长日记</button>
+                <button class="primary-btn" type="button" id="profile-er" style="background:linear-gradient(135deg,var(--coral),#ffb088);margin-top:0">进入急诊室</button>
+            </div>
+        </div>
+
+        <!-- ER detail -->
+        <div class="sub-screen" id="sub-er-detail">
+            <div class="nav-bar">
+                <button class="nav-bar__back" type="button" data-back>‹ 返回</button>
+                <span class="nav-bar__title">诊断报告</span>
+                <span style="width:60px"></span>
+            </div>
+            <div class="sub-screen__scroll">
+                <div class="detail-hero glass">
+                    <div class="detail-hero__date">2026.06.18 · 急诊</div>
+                    <h2>大绿 · 底部叶片发黄</h2>
+                </div>
+                <div class="detail-body">
+                    <p><strong>诊断结论：</strong>浇水过量导致根部缺氧</p>
+                    <p style="margin-top:12px"><strong>严重程度：</strong>轻度，可自愈</p>
+                    <p style="margin-top:12px"><strong>建议方案：</strong>暂停浇水 2 周，移至通风窗边，观察新叶生长情况。</p>
+                </div>
+                <div class="detail-related glass">
+                    <h4>已执行操作</h4>
+                    <p id="er-done-list" style="font-size:14px;color:#5a6e60;line-height:1.8">暂无</p>
+                </div>
+                <button class="primary-btn" type="button" data-action="care-reminder">设置复查提醒</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-sheet" id="modal-sheet"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <nav class="tab-bar" role="tablist">
+        <button class="tab active" type="button" data-screen="feed" role="tab" aria-selected="true">
+            <span class="tab__icon">🏠</span>
+            <span class="tab__label">动态</span>
+        </button>
+        <button class="tab" type="button" data-screen="er" role="tab" aria-selected="false">
+            <span class="tab__icon">🩺</span>
+            <span class="tab__label">急诊</span>
+        </button>
+        <button class="tab" type="button" data-screen="journal" role="tab" aria-selected="false">
+            <span class="tab__icon">📔</span>
+            <span class="tab__label">手帐</span>
+        </button>
+        <button class="tab" type="button" data-screen="report" role="tab" aria-selected="false">
+            <span class="tab__icon">✨</span>
+            <span class="tab__label">年报</span>
+        </button>
+    </nav>
+
+    <div class="home-indicator" aria-hidden="true"></div>
+</div>
+
+<script>
+    const PLANTS = {
+        dalv: {
+            name: '大绿', species: '琴叶榕', emoji: '🌿',
+            location: '客厅书桌', status: '☀️ 光合作用中', statusClass: 'status-pill--ok',
+            personality: '温柔、爱晒太阳',
+            post: '今天长出了新叶，好像又更靠近阳光了一点 🌿 早上的光斜照进来，每个细胞都在努力张开呼吸～',
+            hugTitle: '大绿感受到了你的关注',
+            hugDesc: '它轻轻晃了晃叶子——今天也在关注你 ♡',
+            replies: ['感受到啦！你今天也来找我啦～', '谢谢你一直在关注我，我会努力长高高的 🌿']
+        },
+        suisui: {
+            name: '碎碎', species: '薄荷', emoji: '🌱',
+            location: '阳台挂架', status: '💧 需要浇水', statusClass: 'status-pill--alert',
+            personality: '活泼、爱撒娇',
+            post: '这两天有点干渴，可以帮我喝点水吗？太阳太热情了，叶子悄悄卷起来了……',
+            hugTitle: '碎碎开心地摇了摇！',
+            hugDesc: '薄荷的清香飘了出来～',
+            replies: ['你来看我了！好开心～', '咕噜咕噜……谢谢你来找我 💧']
+        }
+    };
+
+    const MEMORIES = {
+        'grow-0615': { plant: 'dalv', date: '2026.06.15', badge: '突破性成长', badgeClass: 'memory-card__badge--grow', title: '顶端萌发新叶芽', body: 'AI 多模态识别到顶端萌发全新的嫩绿叶芽，成长进度超越同类 85% 的植物。系统已自动生成内心独白动态，并推送到你的 Feed。', feedPlant: 'dalv' },
+        'move-0601': { plant: 'dalv', date: '2026.06.01', badge: '环境迁徙', badgeClass: 'memory-card__badge--move', title: '搬到向阳书桌', body: '从阴暗卧室移至客厅书桌，系统检测到光合有效辐射 (PAR) 提升 240%，呼吸律动趋于平稳。这是一次成功的环境优化。', feedPlant: 'dalv' },
+        'water-0520': { plant: 'dalv', date: '2026.05.20', badge: '系统给水', badgeClass: 'memory-card__badge--water', title: '第 4 次深度浇水', body: '完成入户以来第 4 次深度浇水，土壤电导率(EC)与湿度完美回归基准线。', feedPlant: 'dalv' },
+        'thirst-0618': { plant: 'suisui', date: '2026.06.18', badge: '状态预警', badgeClass: 'memory-card__badge--move', title: '烈日下叶片卷曲', body: '阳台温度达 34°C，碎碎开始卷叶求救。系统已推送浇水提醒至动态页。', feedPlant: 'suisui' },
+        'plant-0501': { plant: 'suisui', date: '2026.05.01', badge: '入户纪念', badgeClass: 'memory-card__badge--grow', title: '碎碎来到阳台', body: '第一盆薄荷入驻阳台挂架，开启清新陪伴之旅。', feedPlant: 'suisui' }
+    };
+
+    const STATS = {
+        days: { value: '365 天', label: '陪伴时间最长 · 琴叶榕', title: '陪伴天数', insights: [
+            { icon: '🌅', text: '你们一起经历了 4 个季节更替' },
+            { icon: '🏆', text: '超过了 92% 的 Florae 用户' },
+            { icon: '💚', text: '大绿是你养得最久的植物伙伴' }
+        ]},
+        leaves: { value: '12 片', label: '见证新叶诞生', title: '新叶记录', insights: [
+            { icon: '🌱', text: '平均每 30 天萌发 1 片新叶' },
+            { icon: '📈', text: '6 月成长速度最快，单月 3 片' },
+            { icon: '✨', text: '最新一片在 6 月 15 日诞生' }
+        ]},
+        chats: { value: '1,240 次', label: '人植情感对话交互', title: '对话次数', insights: [
+            { icon: '💬', text: '平均每天 3.4 次对话' },
+            { icon: '🩺', text: '其中 18 次来自急诊室求助' },
+            { icon: '🌙', text: '你最喜欢在晚上 9 点跟植物聊天' }
+        ]}
+    };
+
+    const state = {
+        currentScreen: 'feed',
+        overlayStack: [],
+        careDone: { pause: false, move: false },
+        waterSteps: 0,
+        capturePhoto: false,
+        currentPlant: null,
+        currentStat: null,
+        suisuiWatered: false,
+        likes: { dalv: false, suisui: false },
+        favorites: { dalv: false, suisui: false },
+        onboarded: false
+    };
+
+    const phone = document.getElementById('phone');
+    const fab = document.getElementById('fab');
+    const tabs = document.querySelectorAll('.tab');
+    const screens = document.querySelectorAll('.screen');
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const modalSheet = document.getElementById('modal-sheet');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function switchScreen(name) {
+        closeAllOverlays();
+        state.currentScreen = name;
+        screens.forEach(s => s.classList.toggle('active', s.id === `screen-${name}`));
+        tabs.forEach(t => {
+            const match = t.dataset.screen === name;
+            t.classList.toggle('active', match);
+            t.setAttribute('aria-selected', match);
+        });
+        phone.classList.toggle('report-active', name === 'report');
+        fab.classList.toggle('hidden', name === 'report');
+        document.querySelector(`#screen-${name}`)?.scrollTo({ top: 0 });
+    }
+
+    function openSubScreen(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        state.overlayStack.push(id);
+        el.classList.add('open');
+        fab.style.display = 'none';
+    }
+
+    function closeSubScreen() {
+        const id = state.overlayStack.pop();
+        if (!id) return;
+        document.getElementById(id)?.classList.remove('open');
+        if (state.overlayStack.length === 0) {
+            fab.style.display = '';
+            if (state.currentScreen !== 'report') fab.classList.remove('hidden');
+        }
+    }
+
+    function closeAllOverlays() {
+        while (state.overlayStack.length) closeSubScreen();
+    }
+
+    function openModal(html) {
+        modalSheet.innerHTML = html;
+        modalBackdrop.classList.add('open');
+    }
+
+    function closeModal() {
+        modalBackdrop.classList.remove('open');
+        modalSheet.innerHTML = '';
+    }
+
+    // ── Feed actions ──
+    function openReply(plantId) {
+        const p = PLANTS[plantId];
+        state.currentPlant = plantId;
+        document.getElementById('reply-title').textContent = `和 ${p.name} 对话`;
+        document.getElementById('reply-plant-post').textContent = p.post;
+        document.getElementById('reply-messages').innerHTML = '';
+        document.getElementById('reply-input').value = '';
+        document.getElementById('reply-send').disabled = true;
+        openSubScreen('sub-reply');
+    }
+
+    function sendReply() {
+        const input = document.getElementById('reply-input');
+        const text = input.value.trim();
+        if (!text) return;
+        const p = PLANTS[state.currentPlant];
+        const msgs = document.getElementById('reply-messages');
+        msgs.innerHTML += `<div class="chat-bubble chat-bubble--user">${text}</div>`;
+        input.value = '';
+        document.getElementById('reply-send').disabled = true;
+        setTimeout(() => {
+            const reply = p.replies[Math.floor(Math.random() * p.replies.length)];
+            msgs.innerHTML += `<div class="chat-bubble chat-bubble--ai"><div class="chat-bubble__label">${p.emoji} ${p.name}</div>${reply}</div>`;
+            msgs.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+        }, 800);
+    }
+
+    function openLike(plantId) {
+        const p = PLANTS[plantId];
+        state.likes[plantId] = true;
+        const likesEl = document.getElementById(`likes-${plantId}`);
+        const btn = document.getElementById(`btn-like-${plantId}`);
+        if (likesEl) {
+            likesEl.textContent = '♡ 你 · 今天也在关注 ta';
+            likesEl.classList.add('visible');
+        }
+        if (btn) {
+            btn.classList.add('active');
+            btn.textContent = '♡ 已关注';
+        }
+        document.getElementById('hug-emoji').textContent = '♡';
+        document.getElementById('hug-title').textContent = p.hugTitle;
+        document.getElementById('hug-desc').textContent = p.hugDesc;
+        openSubScreen('sub-hug');
+    }
+
+    function openFavorite(plantId) {
+        const p = PLANTS[plantId];
+        state.favorites[plantId] = true;
+        openModal(`
+            <div class="modal-handle"></div>
+            <div class="modal-title">收藏成长瞬间</div>
+            <div class="modal-desc">将 ${p.name} 的这条动态收入手帐</div>
+            <div class="glass" style="padding:14px;margin-bottom:16px;font-size:15px;color:#2c4034;line-height:1.55">${p.post}</div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn--primary" data-modal-action="confirm-favorite" data-plant="${plantId}">收入手帐</button>
+                <button class="modal-btn modal-btn--ghost" data-modal-action="close">取消</button>
+            </div>
+        `);
+    }
+
+    function openErEntry(mode) {
+        state.currentPlant = 'dalv';
+        if (mode === 'photo') {
+            openCapture('dalv');
+            return;
+        }
+        openSubScreen('sub-reply');
+        document.getElementById('reply-title').textContent = mode === 'voice' ? '语音描述' : '描述症状';
+        document.getElementById('reply-plant-post').textContent = mode === 'voice'
+            ? '🎙️ 按住说话，描述你观察到的植物异常…'
+            : '用文字告诉 AI 你发现了什么异常…';
+        document.getElementById('reply-messages').innerHTML = '';
+        document.getElementById('reply-input').placeholder = mode === 'voice' ? '或改为文字输入…' : '例如：叶片发黄、边缘卷曲…';
+        document.getElementById('reply-input').value = '';
+        document.getElementById('reply-send').disabled = true;
+    }
+
+    function finishOnboard() {
+        state.onboarded = true;
+        document.getElementById('sub-onboard').classList.remove('open');
+        fab.style.display = '';
+    }
+
+    function openWater() {
+        state.waterSteps = 0;
+        document.querySelectorAll('.water-step').forEach(s => s.classList.remove('done'));
+        document.getElementById('water-complete').disabled = true;
+        openSubScreen('sub-water');
+    }
+
+    function completeWater() {
+        state.suisuiWatered = true;
+        document.getElementById('suisui-status').textContent = '💚 水润满足';
+        document.getElementById('suisui-label').textContent = '满足';
+        document.getElementById('suisui-label').className = 'sticker-label';
+        document.getElementById('suisui-body').textContent = '喝饱啦！叶子慢慢舒展开，谢谢你来关注我～薄荷清香送给你 🌱';
+        document.getElementById('sticker-suisui').classList.remove('plant-sticker--alert');
+        closeSubScreen();
+        showToast('浇水完成 · 已记入成长手帐');
+        addJournalEntry('suisui', '今天', '浇水', 'memory-card__badge--water', '给碎碎浇透水', '土壤湿度回归正常，碎碎状态恢复良好。', '好舒服～');
+    }
+
+    function addJournalEntry(plant, date, badge, badgeClass, title, desc, note) {
+        const list = document.getElementById(`journal-${plant}`);
+        const emoji = plant === 'dalv' ? '🌿' : '🌱';
+        const article = document.createElement('article');
+        article.className = 'memory-card';
+        article.dataset.action = 'memory';
+        article.dataset.id = 'dynamic-' + Date.now();
+        MEMORIES[article.dataset.id] = { plant, date, badge, badgeClass, title, body: desc, feedPlant: plant };
+        article.innerHTML = `<span class="memory-card__sticker">✨</span>
+            <div class="memory-card__inner">
+                <div class="memory-card__cutout"><span>${emoji}</span></div>
+                <div class="memory-card__date">${date}</div>
+                <span class="memory-card__badge ${badgeClass}">${badge}</span>
+                <h3 class="memory-card__title">${title}</h3>
+                <p class="memory-card__desc">${desc}</p>
+                ${note ? `<p class="memory-card__note">${note}</p>` : ''}
+            </div>`;
+        list.prepend(article);
+        document.querySelector('.scrapbook-page').hidden = false;
+        if (plant === 'suisui') document.getElementById('scrapbook-suisui').hidden = false;
+    }
+
+    function openCapture(plantId) {
+        state.capturePhoto = false;
+        state.currentPlant = plantId || 'dalv';
+        document.getElementById('capture-plant').value = state.currentPlant;
+        document.getElementById('capture-note').value = '';
+        document.getElementById('capture-label').textContent = '点击模拟拍照';
+        document.getElementById('capture-save').disabled = true;
+        openSubScreen('sub-capture');
+    }
+
+    function saveCapture() {
+        const plant = document.getElementById('capture-plant').value;
+        const note = document.getElementById('capture-note').value.trim() || '记录了一个美好瞬间';
+        const p = PLANTS[plant];
+        closeSubScreen();
+        showToast(`已保存到 ${p.name} 的手帐`);
+        addJournalEntry(plant, '刚刚', '瞬间记录', 'memory-card__badge--grow', note.slice(0, 20), note);
+    }
+
+    function openSharePost(plantId) {
+        openFavorite(plantId);
+    }
+
+    function openPlantProfile(plantId) {
+        const p = PLANTS[plantId];
+        state.currentPlant = plantId;
+        document.getElementById('profile-emoji').textContent = p.emoji;
+        document.getElementById('profile-name').textContent = p.name;
+        document.getElementById('profile-species').textContent = p.species;
+        document.getElementById('profile-status').textContent =
+            plantId === 'suisui' && state.suisuiWatered ? '💚 水润满足' : p.status;
+        const persEl = document.getElementById('profile-personality');
+        if (persEl) persEl.textContent = p.personality || '';
+        document.getElementById('profile-location').textContent = p.location;
+        document.getElementById('profile-er').style.display = plantId === 'dalv' ? '' : 'none';
+        openSubScreen('sub-profile');
+    }
+
+    function openMemory(id) {
+        const m = MEMORIES[id];
+        if (!m) return;
+        state.currentPlant = m.plant;
+        document.getElementById('mem-date').textContent = m.date;
+        const badge = document.getElementById('mem-badge');
+        badge.textContent = m.badge;
+        badge.className = 'memory-card__badge ' + (m.badgeClass || '');
+        document.getElementById('mem-title').textContent = m.title;
+        document.getElementById('mem-body').textContent = m.body;
+        document.getElementById('mem-goto-feed').onclick = () => {
+            closeAllOverlays();
+            switchScreen('feed');
+            document.getElementById(`card-${m.feedPlant}`)?.scrollIntoView({ behavior: 'smooth' });
+        };
+        document.getElementById('mem-goto-plant').onclick = () => {
+            closeSubScreen();
+            openPlantProfile(m.plant);
+        };
+        openSubScreen('sub-memory');
+    }
+
+    function openStat(statId) {
+        const s = STATS[statId];
+        state.currentStat = statId;
+        document.getElementById('stat-nav-title').textContent = s.title;
+        document.getElementById('stat-value').textContent = s.value;
+        document.getElementById('stat-label').textContent = s.label;
+        document.getElementById('stat-insights').innerHTML = s.insights.map(i =>
+            `<div class="insight-row glass"><span class="insight-row__icon">${i.icon}</span><span class="insight-row__text">${i.text}</span></div>`
+        ).join('');
+        openSubScreen('sub-stat');
+    }
+
+    function updateErDone() {
+        const items = [];
+        if (state.careDone.pause) items.push('✓ 已暂停浇水 2 周');
+        if (state.careDone.move) items.push('✓ 已移至通风处');
+        document.getElementById('er-done-list').textContent = items.length ? items.join('\n') : '暂无';
+    }
+
+    function openCarePause() {
+        openModal(`
+            <div class="modal-handle"></div>
+            <div class="modal-title">暂停浇水 2 周</div>
+            <div class="modal-desc">大绿根部需要呼吸恢复。确认后系统将暂停浇水提醒，并在 2 周后通知你复查。</div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn--primary" data-modal-action="confirm-pause">确认执行</button>
+                <button class="modal-btn modal-btn--ghost" data-modal-action="close">取消</button>
+            </div>
+        `);
+    }
+
+    function openCareMove() {
+        openModal(`
+            <div class="modal-handle"></div>
+            <div class="modal-title">移至通风处</div>
+            <div class="modal-desc">请完成以下步骤，帮助大绿恢复：</div>
+            <div class="checklist" id="move-checklist">
+                <div class="checklist-item" data-check="0"><div class="checklist-item__box"></div><span>选择窗边通风位置</span></div>
+                <div class="checklist-item" data-check="1"><div class="checklist-item__box"></div><span>避免阳光直射叶片</span></div>
+                <div class="checklist-item" data-check="2"><div class="checklist-item__box"></div><span>确认托盘无积水</span></div>
+            </div>
+            <button class="modal-btn modal-btn--primary" id="move-done" type="button" disabled>完成迁移</button>
+        `);
+        setupMoveChecklist();
+    }
+
+    function setupMoveChecklist() {
+        let checked = 0;
+        modalSheet.querySelectorAll('.checklist-item').forEach(item => {
+            item.onclick = () => {
+                if (item.classList.contains('checked')) return;
+                item.classList.add('checked');
+                item.querySelector('.checklist-item__box').textContent = '✓';
+                checked++;
+                document.getElementById('move-done').disabled = checked < 3;
+            };
+        });
+        document.getElementById('move-done').onclick = () => {
+            state.careDone.move = true;
+            document.getElementById('chip-move').classList.add('done');
+            updateErDone();
+            closeModal();
+            showToast('迁移完成！已更新护理计划');
+            addJournalEntry('dalv', '今天', '环境迁徙', 'memory-card__badge--move', '移至通风窗边', '为大绿选择了通风良好的窗边位置，有助于根部恢复。');
+        };
+    }
+
+    function openReminder() {
+        openModal(`
+            <div class="modal-handle"></div>
+            <div class="modal-title">设置提醒</div>
+            <div class="modal-desc">选择复查或浇水提醒时间：</div>
+            <div class="reminder-options">
+                <button class="reminder-option selected" data-days="3">3 天后</button>
+                <button class="reminder-option" data-days="7">1 周后</button>
+                <button class="reminder-option" data-days="14">2 周后（复查）</button>
+            </div>
+            <button class="modal-btn modal-btn--primary" id="reminder-confirm" type="button">确认提醒</button>
+        `);
+        let selected = 3;
+        modalSheet.querySelectorAll('.reminder-option').forEach(opt => {
+            opt.onclick = () => {
+                modalSheet.querySelectorAll('.reminder-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selected = +opt.dataset.days;
+            };
+        });
+        document.getElementById('reminder-confirm').onclick = () => {
+            closeModal();
+            showToast(`已设置 ${selected} 天后提醒`);
+        };
+    }
+
+    // ── Event delegation ──
+    tabs.forEach(tab => tab.addEventListener('click', () => switchScreen(tab.dataset.screen)));
+
+    document.addEventListener('click', e => {
+        const el = e.target.closest('[data-action], [data-back], [data-journal-plant], [data-share], [data-modal-action], [data-step]');
+        if (!el) return;
+
+        if (el.dataset.back !== undefined) { closeSubScreen(); return; }
+
+        const action = el.dataset.action;
+        if (action === 'reply') openReply(el.dataset.plant);
+        else if (action === 'like' || action === 'hug') openLike(el.dataset.plant);
+        else if (action === 'favorite' || action === 'share-post') openFavorite(el.dataset.plant);
+        else if (action === 'water') openWater();
+        else if (action === 'capture') openCapture(el.dataset.plant);
+        else if (action === 'plant-profile') openPlantProfile(el.dataset.plant);
+        else if (action === 'memory') openMemory(el.dataset.id);
+        else if (action === 'stat') openStat(el.dataset.stat);
+        else if (action === 'share-report') openSubScreen('sub-share-report');
+        else if (action === 'share-stat') {
+            closeAllOverlays();
+            openSubScreen('sub-share-report');
+        }
+        else if (action === 'care-pause') openCarePause();
+        else if (action === 'care-move') openCareMove();
+        else if (action === 'care-reminder') openReminder();
+        else if (action === 'er-detail') openSubScreen('sub-er-detail');
+        else if (action === 'er-photo') openErEntry('photo');
+        else if (action === 'er-voice') openErEntry('voice');
+        else if (action === 'er-text') openErEntry('text');
+        else if (action === 'onboard-photo') { finishOnboard(); openCapture('dalv'); showToast('识别成功 · 欢迎 大绿'); }
+        else if (action === 'onboard-manual') { finishOnboard(); openPlantProfile('dalv'); showToast('已为 大绿 建立档案'); }
+        else if (action === 'onboard-skip') finishOnboard();
+        else if (action === 'open-feed-info') {
+            openModal(`
+                <div class="modal-handle"></div>
+                <div class="modal-title">今日活跃</div>
+                <div class="modal-desc">2 位植物伙伴正在分享心情</div>
+                <button class="share-option" type="button" data-modal-action="goto-dalv" style="margin-bottom:8px">
+                    <span class="share-option__icon">🌿</span> 大绿 · 光合作用中
+                </button>
+                <button class="share-option" type="button" data-modal-action="goto-suisui">
+                    <span class="share-option__icon">🌱</span> 碎碎 · ${state.suisuiWatered ? '水润满足' : '极度口渴'}
+                </button>
+            `);
+        }
+
+        if (el.dataset.journalPlant) {
+            document.querySelectorAll('.plant-chip').forEach(c => c.classList.toggle('active', c.dataset.journalPlant === el.dataset.journalPlant));
+            document.getElementById('scrapbook-dalv').hidden = el.dataset.journalPlant !== 'dalv';
+            document.getElementById('scrapbook-suisui').hidden = el.dataset.journalPlant !== 'suisui';
+        }
+
+        if (el.dataset.share === 'story') { closeAllOverlays(); showToast('Story 卡片已生成'); }
+        else if (el.dataset.share === 'copy') { closeAllOverlays(); showToast('链接已复制到剪贴板'); }
+        else if (el.dataset.share === 'save') { closeAllOverlays(); showToast('已保存到相册'); }
+
+        if (el.dataset.modalAction === 'close') closeModal();
+        else if (el.dataset.modalAction === 'confirm-pause') {
+            state.careDone.pause = true;
+            document.getElementById('chip-pause').classList.add('done');
+            updateErDone();
+            closeModal();
+            showToast('已暂停浇水提醒 2 周');
+            addJournalEntry('dalv', '今天', '护理计划', 'memory-card__badge--water', '暂停浇水 2 周', '根据 AI 诊断，开始执行干燥恢复计划。');
+        }
+        else if (el.dataset.modalAction === 'copy-post') { closeModal(); showToast('动态文字已复制'); }
+        else if (el.dataset.modalAction === 'share-story') { closeModal(); showToast('Story 卡片已生成'); }
+        else if (el.dataset.modalAction === 'goto-dalv') { closeModal(); openPlantProfile('dalv'); }
+        else if (el.dataset.modalAction === 'goto-suisui') { closeModal(); openPlantProfile('suisui'); }
+        else if (el.dataset.modalAction === 'confirm-favorite') {
+            const pid = el.dataset.plant;
+            const p = PLANTS[pid];
+            closeModal();
+            showToast(`已收藏 ${p.name} 的动态`);
+            addJournalEntry(pid, '今天', '收藏', 'memory-card__badge--grow', `${p.name} 的动态`, p.post, '← 收藏的瞬间');
+        }
+
+        if (el.dataset.step !== undefined) {
+            const step = +el.dataset.step;
+            if (step === state.waterSteps) {
+                el.classList.add('done');
+                state.waterSteps++;
+                document.getElementById('water-complete').disabled = state.waterSteps < 3;
+            }
+        }
+    });
+
+    modalBackdrop.addEventListener('click', e => {
+        if (e.target === modalBackdrop) closeModal();
+    });
+
+    document.getElementById('reply-input').addEventListener('input', e => {
+        document.getElementById('reply-send').disabled = !e.target.value.trim();
+    });
+    document.getElementById('reply-send').addEventListener('click', sendReply);
+    document.getElementById('water-complete').addEventListener('click', completeWater);
+
+    document.getElementById('capture-preview').addEventListener('click', () => {
+        state.capturePhoto = true;
+        document.getElementById('capture-label').textContent = '照片已拍摄 ✓';
+        document.getElementById('capture-save').disabled = false;
+    });
+    document.getElementById('capture-note').addEventListener('input', () => {
+        if (state.capturePhoto) document.getElementById('capture-save').disabled = false;
+    });
+    document.getElementById('capture-save').addEventListener('click', saveCapture);
+
+    document.getElementById('profile-journal').addEventListener('click', () => {
+        const plant = state.currentPlant;
+        closeAllOverlays();
+        switchScreen('journal');
+        document.querySelector(`[data-journal-plant="${plant}"]`)?.click();
+    });
+    document.getElementById('profile-er').addEventListener('click', () => {
+        closeAllOverlays();
+        switchScreen('er');
+    });
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').textContent = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    fab.style.display = 'none';
+</script>
+
+</body>
+</html>
