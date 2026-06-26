@@ -8,103 +8,325 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --w:393px;--h:852px;
-  --bg:#fafafa;--card:#f5f5f5;--white:#fff;
+  --bg:#fdfbf7;--card:#f3f2ee;--white:#fff;
   --text:#1a1a1a;--muted:#a3a3a3;--line:#ebebeb;
-  --red:#e57373;--green:#81c784;
+  --olive:#5a6348;--olive-d:#4a5340;--olive-l:#e8ebe3;--olive-bg:#eef0e8;
+  --checkin-green:#7d9a6a;--checkin-green-d:#6b8a5c;--checkin-green-bg:#e8f0e4;--checkin-bg:#f9f8f4;
+  --red:#e57373;--green:#81c784;--blue:#7eb8d4;
   --serif:"Songti SC","STSong",Georgia,"Times New Roman",serif;
-  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;
+  --zh:"PingFang SC","PingFangSC-Regular","Hiragino Sans GB",sans-serif;
+  --en:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",sans-serif;
+  --sans:var(--zh);
+  --nav-h:44px;
   --r:24px;--r-sm:16px;
 }
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--sans);background:#ddd;display:flex;align-items:center;justify-content:center;min-height:100dvh;-webkit-font-smoothing:antialiased}
+body{font-family:var(--zh);background:#ddd;display:flex;align-items:center;justify-content:center;min-height:100dvh;-webkit-font-smoothing:antialiased;color:var(--text)}
+.en,.cal__today,.cal__date,.hdr__title,.garden__sec span{font-family:var(--en)}
 .phone{width:var(--w);height:var(--h);max-height:100dvh;background:var(--bg);border-radius:48px;overflow:hidden;position:relative;box-shadow:0 0 0 10px #111,0 0 0 12px #333,0 30px 80px rgba(0,0,0,.15);display:flex;flex-direction:column}
 @media(max-width:420px){body{background:var(--bg)}.phone{width:100%;height:100dvh;border-radius:0;box-shadow:none}}
 
-.status{padding:14px 28px 6px;display:flex;justify-content:space-between;font-size:15px;font-weight:600;color:var(--text);flex-shrink:0;z-index:10}
-.status__r{display:flex;gap:5px;align-items:center;font-size:12px}
+.status.hide,.ios-nav.hide{opacity:0;height:0;overflow:hidden;padding:0;border:none;pointer-events:none}
+.ios-nav{flex-shrink:0;z-index:30;background:rgba(253,251,247,.72);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid rgba(0,0,0,.06);padding-top:env(safe-area-inset-top,0)}
+.ios-nav__inner{display:flex;align-items:center;justify-content:space-between;height:var(--nav-h);padding:0 28px;font-family:var(--en);font-size:15px;font-weight:600;letter-spacing:-.01em}
+.ios-nav__sys{display:flex;gap:5px;align-items:center;font-size:12px;font-weight:600}
 
 .view{flex:1;position:relative;overflow:hidden}
-.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;visibility:hidden;transform:translateX(18px);transition:opacity .35s,transform .35s,visibility .35s;background:var(--bg)}
+.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;visibility:hidden;transform:translateX(16px);transition:opacity .32s,transform .32s,visibility .32s;background:var(--bg)}
 .page.active{opacity:1;visibility:visible;transform:none}
 .page::-webkit-scrollbar{display:none}
+.page--dark{background:#1a1a1a}
 
-/* ── Calendar ── */
-.cal{padding:8px 24px 120px;text-align:center}
-.cal__today{font-family:var(--serif);font-size:42px;font-weight:400;color:var(--text);letter-spacing:-.02em;line-height:1.1}
-.cal__date{font-family:var(--serif);font-size:36px;color:var(--text);margin-bottom:28px}
-.cal__card{background:var(--white);border-radius:28px;padding:20px 16px 16px;box-shadow:0 4px 24px rgba(0,0,0,.04);margin:0 auto;max-width:340px}
-.cal__grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-.cal__day{aspect-ratio:1;border-radius:10px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;font-size:13px;color:#c8c8c8;position:relative;font-weight:400}
+/* ── Shared header ── */
+.hdr{display:flex;align-items:center;padding:6px 20px 12px;gap:10px}
+.hdr__avatar{width:34px;height:34px;border-radius:50%;border:none;padding:0;overflow:hidden;cursor:pointer;flex-shrink:0;background:linear-gradient(135deg,#c8dcc0,#8faa82)}
+.hdr__avatar img{width:100%;height:100%;object-fit:cover}
+.hdr__title{flex:1;font-family:var(--serif);font-size:18px;font-weight:500;text-align:center;color:var(--olive-d)}
+.hdr__btn{width:44px;height:44px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;color:var(--text)}
+.hdr__btn svg{width:20px;height:20px;display:block}
+.hdr__spacer{width:44px;flex-shrink:0}
+
+/* ── Tab bar ── */
+.tabbar{flex-shrink:0;display:flex;justify-content:center;gap:48px;padding:10px 24px calc(14px + env(safe-area-inset-bottom,0));background:rgba(255,255,255,.78);border-top:.5px solid rgba(0,0,0,.06);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);transition:transform .3s,opacity .3s}
+.tabbar.hidden{transform:translateY(100%);opacity:0;pointer-events:none;position:absolute;bottom:0;left:0;right:0}
+.tabbar__item{border:none;background:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted);padding:4px 12px}
+.tabbar__item svg{width:22px;height:22px}
+.tabbar__item.on{color:var(--olive);font-weight:500}
+
+/* ── P1 Home (layout from design screenshot) ── */
+.home{--home-x:24px;min-height:100%;position:relative;display:flex;flex-direction:column;background:#fdfcf9;padding:20px 0 0}
+.home__top{display:flex;align-items:center;justify-content:space-between;padding:0 var(--home-x);height:28px;flex-shrink:0;margin-bottom:18px}
+.home__ava{width:28px;height:28px;border-radius:50%;border:none;padding:0;overflow:hidden;cursor:pointer;flex-shrink:0;background:linear-gradient(135deg,#c8dcc0,#8faa82)}
+.home__set{width:28px;height:28px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:#333;flex-shrink:0}
+.home__set svg{width:20px;height:20px;display:block}
+.home__collage{flex:1 1 0;min-height:200px;display:flex;align-items:center;justify-content:center;padding:0 16px}
+.home__collage-art{display:block;width:100%;max-width:360px;height:auto;object-fit:contain;pointer-events:none;user-select:none}
+.home__footer{flex-shrink:0;padding:0 28px 60px;display:flex;flex-direction:column;gap:80px}
+.home__body{text-align:center;padding:0 4px}
+.home__body h1{font-size:22px;font-weight:700;line-height:1.35;margin-bottom:16px;color:#111;letter-spacing:-.02em}
+.home__body p{font-size:14px;color:#666;line-height:1.65;margin-bottom:10px}
+.home__body p:last-child{font-size:13px;color:#aaa;margin-bottom:0}
+.home__cta-wrap{position:relative;left:auto;right:auto;bottom:auto;z-index:2}
+.home__cta{width:100%;padding:17px 24px;border:none;border-radius:100px;background:#111;color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .15s,opacity .15s;letter-spacing:-.01em}
+.home__cta:active{transform:scale(.98);opacity:.92}
+.home__cta svg{width:20px;height:20px;flex-shrink:0}
+
+/* ── Daily Check-in ── */
+.checkin{min-height:100%;background:var(--checkin-bg);padding:0 20px 32px}
+.checkin__nav{display:grid;grid-template-columns:44px 1fr 44px;align-items:start;min-height:44px;padding:4px 0 20px}
+.checkin__back{width:44px;height:44px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:var(--text);justify-self:start}
+.checkin__back svg{width:20px;height:20px;display:block}
+.checkin__hdr{text-align:center;padding-top:2px}
+.checkin__hdr h1{font-size:20px;font-weight:700;color:#111;letter-spacing:-.02em;margin-bottom:6px}
+.checkin__hdr p{font-size:13px;color:#999;font-weight:400}
+.checkin__nav-spacer{width:44px;height:44px}
+.checkin__card{background:var(--white);border-radius:24px;padding:18px 16px 16px;margin-bottom:14px;box-shadow:0 2px 16px rgba(0,0,0,.03)}
+.checkin__card h2{font-size:14px;font-weight:600;color:var(--checkin-green);margin-bottom:14px}
+.checkin__row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.checkin__row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.checkin__opt{border:none;border-radius:16px;padding:18px 12px 14px;cursor:pointer;font-family:inherit;background:#f3f3f3;color:#999;transition:background .2s,color .2s,transform .12s;display:flex;flex-direction:column;align-items:center;gap:8px}
+.checkin__opt svg{width:28px;height:28px;display:block}
+.checkin__opt span{font-size:14px;font-weight:500}
+.checkin__opt.on{background:var(--checkin-green-bg);color:var(--checkin-green-d)}
+.checkin__opt.on svg{color:var(--checkin-green)}
+.checkin__mood{border:none;border-radius:14px;padding:14px 6px 12px;cursor:pointer;font-family:inherit;background:var(--white);display:flex;flex-direction:column;align-items:center;gap:6px;transition:background .2s,transform .12s}
+.checkin__mood:active,.checkin__opt:active{transform:scale(.97)}
+.checkin__mood-ico{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1}
+.checkin__mood-ico--great{background:#e8f5e9}
+.checkin__mood-ico--okay{background:#fff8e1}
+.checkin__mood-ico--bad{background:#fff3e0}
+.checkin__mood span{font-size:12px;color:#888;font-weight:500}
+.checkin__mood.on{background:#f7faf5;box-shadow:inset 0 0 0 1.5px var(--checkin-green-bg)}
+.checkin__mood.on span{color:var(--checkin-green-d);font-weight:600}
+.checkin__photo{position:relative;width:100%;border:none;border-radius:18px;overflow:hidden;cursor:pointer;padding:0;background:#e8e8e8;aspect-ratio:16/10;display:block}
+.checkin__photo img{width:100%;height:100%;object-fit:cover;display:none}
+.checkin__photo img.show{display:block}
+.checkin__photo-ph{position:absolute;inset:0;background:url(https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=800&h=500&fit=crop&q=80) center/cover no-repeat}
+.checkin__photo-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.28);color:#fff;transition:opacity .2s}
+.checkin__photo-overlay.hide{opacity:0;pointer-events:none}
+.checkin__cam{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.checkin__cam svg{width:24px;height:24px;color:#555}
+.checkin__photo-overlay span{font-size:13px;font-weight:500;text-shadow:0 1px 4px rgba(0,0,0,.2)}
+.checkin__submit{width:100%;padding:17px;border:none;border-radius:100px;background:var(--checkin-green);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:6px;transition:transform .15s,opacity .15s,background .15s}
+.checkin__submit:active{transform:scale(.98);opacity:.92;background:var(--checkin-green-d)}
+.checkin__submit:disabled{opacity:.45;pointer-events:none}
+
+/* ── P2 Member ── */
+.member{padding:0 20px 32px;min-height:100%;background:var(--bg);position:relative}
+.member__nav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;min-height:44px;padding:0 4px;margin-bottom:4px}
+.member__close{width:44px;height:44px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:var(--text);justify-self:start}
+.member__close svg{width:20px;height:20px;display:block}
+.member__title{font-size:17px;font-weight:600;color:var(--text);text-align:center;letter-spacing:-.02em;line-height:44px;padding:0}
+.member__nav-spacer{width:44px;height:44px}
+.member__hero{position:relative;z-index:4;display:flex;justify-content:center;margin:8px 0 -52px;pointer-events:none}
+.member__hero img{height:190px;width:auto;max-width:78%;object-fit:contain;filter:drop-shadow(0 14px 32px rgba(0,0,0,.14))}
+.member__stack{position:relative;z-index:2;padding-top:48px}
+.member__card{background:var(--white);border-radius:32px;padding:20px 18px;margin-bottom:14px;box-shadow:0 2px 20px rgba(0,0,0,.04)}
+.member__card-hdr{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px;color:var(--text)}
+.member__ai-text{font-size:13px;line-height:1.75;color:#666;display:flex;gap:8px;align-items:flex-start}
+.member__ai-text span{font-size:15px;flex-shrink:0;margin-top:1px}
+.member__field{margin-bottom:18px}
+.member__field:last-child{margin-bottom:0}
+.member__field label{display:block;font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:400}
+.member__nick{width:100%;border:none;border-bottom:1px solid var(--line);padding:10px 0;font-size:16px;font-family:inherit;font-weight:500;outline:none;background:transparent;color:var(--text);letter-spacing:-.01em}
+.member__nick::placeholder{color:#ccc;font-weight:400}
+.member__nick:focus{border-bottom-color:#999}
+.member__row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.member__row-val{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:500}
+.member__field input{width:100%;border:none;border-bottom:1px solid var(--line);padding:10px 0;font-size:15px;font-family:inherit;outline:none;background:transparent;color:var(--text)}
+.member__field input::placeholder{color:#ccc}
+.member__divider{height:1px;background:var(--line);margin:16px 0}
+.member__cta{width:100%;padding:18px;border:none;border-radius:100px;background:#111;color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
+.member__cta:active{opacity:.9}
+.member__foot{text-align:center;font-size:12px;color:var(--muted);margin-top:14px;line-height:1.55;padding:0 12px}
+
+.proc{position:absolute;inset:0;background:rgba(253,251,247,.96);z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.proc.on{display:flex}
+.proc__ring{width:40px;height:40px;border:2px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite}
+.proc__text{font-size:13px;color:#999}
+
+/* ── Garden ── */
+.garden{padding:0 20px 100px}
+.garden__hero{background:var(--white);border-radius:var(--r);padding:28px 24px 24px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.04);margin-bottom:14px;cursor:pointer}
+.garden__cam{width:52px;height:52px;border-radius:50%;background:var(--olive-l);border:none;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;cursor:pointer}
+.garden__cam svg{width:24px;height:24px;color:var(--olive)}
+.garden__hero h2{font-size:17px;font-weight:600;margin-bottom:6px}
+.garden__hero p{font-size:12px;color:var(--muted);line-height:1.5}
+.garden__album{border:none;background:none;font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px}
+.garden__sec{display:flex;align-items:flex-end;justify-content:space-between;margin:22px 0 14px}
+.garden__sec h3{font-size:16px;font-weight:600}
+.garden__sec span{font-size:10px;color:var(--muted);letter-spacing:.08em;display:block;margin-top:2px}
+.garden__sec a{font-size:12px;color:var(--muted);text-decoration:none;cursor:pointer}
+.garden__grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.plant-card{cursor:pointer;border:none;background:none;padding:0;text-align:left;font-family:inherit;width:100%}
+.plant-card__img{aspect-ratio:1;border-radius:var(--r-sm);overflow:hidden;background:var(--card);margin-bottom:10px}
+.plant-card__img img{width:100%;height:100%;object-fit:cover;display:block}
+.plant-card__row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.plant-card__nick{font-size:14px;font-weight:600}
+.plant-card__sp{font-size:11px;color:var(--olive)}
+.plant-card__meta{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:2px}
+
+/* ── Journal ── */
+.journal{padding:0 20px 100px}
+.journal__filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;-webkit-overflow-scrolling:touch}
+.journal__filters::-webkit-scrollbar{display:none}
+.jfilt{flex-shrink:0;padding:8px 16px;border-radius:100px;border:1px solid var(--line);background:var(--white);font-size:13px;font-family:inherit;cursor:pointer;color:var(--olive-d)}
+.jfilt.on{background:var(--olive);color:#fff;border-color:var(--olive)}
+.journal__rec-hdr{display:flex;justify-content:space-between;align-items:center;margin:24px 0 14px}
+.journal__rec-hdr h3{font-size:15px;font-weight:600}
+.journal__rec-hdr a{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:none}
+.rec-list{display:flex;flex-direction:column;gap:0}
+.rec-item{display:flex;gap:12px;position:relative;padding-bottom:20px}
+.rec-item:not(:last-child)::before{content:'';position:absolute;left:19px;top:44px;bottom:0;width:1px;background:var(--line)}
+.rec-item__thumb{width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--card)}
+.rec-item__thumb img{width:100%;height:100%;object-fit:cover}
+.rec-item__body{flex:1;min-width:0}
+.rec-item__time{font-size:11px;color:var(--muted);margin-bottom:6px}
+.rec-item__text{font-size:13px;line-height:1.55;margin-bottom:8px}
+.rec-item__tags{display:flex;flex-wrap:wrap;gap:6px}
+.rec-tag{font-size:10px;padding:4px 10px;border-radius:100px;background:var(--olive-l);color:var(--olive-d)}
+.rec-empty{text-align:center;padding:32px 20px;color:var(--muted);font-size:13px;line-height:1.6}
+
+/* ── Original Calendar (in journal) ── */
+.cal{padding:8px 4px 24px;text-align:center;position:relative}
+.cal__today{font-family:var(--serif);font-size:48px;font-weight:400;color:var(--text);letter-spacing:-.02em;line-height:1.05;margin-top:4px}
+.cal__date{font-family:var(--serif);font-size:34px;color:var(--text);margin:4px 0 28px}
+.cal__card{background:var(--white);border-radius:32px;padding:24px 18px 20px;box-shadow:0 4px 24px rgba(0,0,0,.04);margin:0 auto;max-width:340px}
+.cal__grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.cal__day{aspect-ratio:1;border-radius:12px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;font-size:13px;color:#c8c8c8;position:relative;font-weight:400}
+.cal__day.is-empty{background:transparent}
 .cal__day.is-today{background:#efefef;color:#888}
 .cal__day.has-sticker{cursor:pointer;background:var(--white);box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .cal__day.has-sticker .cal__num{opacity:0}
 .cal__sticker{position:absolute;width:150%;height:150%;z-index:2;transform:rotate(var(--rot,-5deg));pointer-events:auto;cursor:pointer}
 .cal__sticker img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.1))}
-.cal__hint{margin-top:28px;font-size:13px;color:var(--muted);letter-spacing:.02em}
-.cal__fab-wrap{position:absolute;bottom:36px;left:0;right:0;display:flex;justify-content:center;z-index:20;pointer-events:none}
-.cal__fab{pointer-events:auto;width:64px;height:64px;border-radius:50%;border:none;background:var(--white);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.cal__hint{margin:28px 0 8px;font-size:13px;color:var(--muted);letter-spacing:.02em}
+.cal__fab-wrap{display:flex;justify-content:center;margin-top:8px}
+.cal__fab{width:64px;height:64px;border-radius:50%;border:none;background:var(--white);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;transition:transform .2s}
 .cal__fab::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 200deg,#e8b4f8,#ffb8a0,#ffe0a0,#a8d8f0,#c8b0f0,#e8b4f8);z-index:-1}
 .cal__fab:active{transform:scale(.92)}
 .cal__fab svg{position:relative;z-index:1}
 
-/* ── Gallery ── */
-.gal{padding-bottom:90px}
-.gal__nav{display:flex;align-items:center;padding:8px 16px 12px;gap:12px}
-.gal__close{width:36px;height:36px;border:none;background:none;font-size:22px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.gal__title{flex:1;text-align:center;font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:4px}
-.gal__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 2px}
-.gal__thumb{aspect-ratio:1;position:relative;cursor:pointer;overflow:hidden;border:none;padding:0;background:none}
-.gal__thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.gal__check{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);background:rgba(0,0,0,.15)}
-.gal__thumb.selected .gal__check{background:rgba(80,80,80,.75);border-color:transparent}
-.gal__thumb.selected .gal__check::after{content:'';position:absolute;inset:5px;background:#fff;border-radius:50%}
-.gal__bar{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:12px 20px calc(12px + env(safe-area-inset-bottom,20px));background:var(--white);border-top:1px solid var(--line)}
-.gal__preview{border:none;background:none;font-size:15px;color:#ccc;font-family:inherit;cursor:pointer;padding:10px}
-.gal__preview.on{color:var(--text)}
-.gal__confirm{min-width:120px;padding:12px 28px;border:none;border-radius:12px;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer;background:#e8e8e8;color:#aaa;transition:all .2s}
-.gal__confirm.on{background:#1a1a1a;color:#fff}
-
-/* ── Profile ── */
-.prof{padding:40px 32px 48px;display:flex;flex-direction:column;align-items:center;min-height:100%}
-.prof__card{width:220px;height:220px;background:#f0f0f0;border-radius:28px;display:flex;align-items:center;justify-content:center;margin:48px 0 56px;transform:rotate(-6deg);box-shadow:0 8px 32px rgba(0,0,0,.06)}
-.prof__card img{width:75%;height:75%;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.08))}
-.prof__field{width:100%;max-width:300px;padding:16px 24px;border:1px solid #e0e0e0;border-radius:100px;font-size:15px;font-family:inherit;color:var(--text);background:transparent;margin-bottom:14px;outline:none;text-align:center}
-.prof__field::placeholder{color:#ccc}
-.prof__skip{margin-top:auto;padding:20px;border:none;background:none;font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit}
+/* ── Camera (拍照记录 UI) ── */
+.camera{position:relative;min-height:100%;display:flex;flex-direction:column;color:#fff;overflow:hidden}
+.camera__bg{position:absolute;inset:0;background:#c8c4bc url(https://images.unsplash.com/photo-1593482892291-0f4f504a7b05?w=900&h=1200&fit=crop&q=85) center/cover no-repeat}
+.camera__bg.has-img{background-image:var(--cam-img);background-size:cover;background-position:center}
+.camera__shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,.02) 35%,rgba(0,0,0,.08) 70%,rgba(0,0,0,.32) 100%);pointer-events:none}
+.camera__nav{position:relative;z-index:3;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:8px 12px 0;min-height:44px}
+.camera__back,.camera__more{width:44px;height:44px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:#fff}
+.camera__back svg,.camera__more svg{width:22px;height:22px;display:block}
+.camera__title{font-size:17px;font-weight:600;text-align:center;color:#fff;letter-spacing:-.01em;display:flex;align-items:center;justify-content:center;gap:4px}
+.camera__spark{font-size:12px;opacity:.85;font-weight:400}
+.camera__ai{position:relative;z-index:3;margin:14px 20px 0;padding:14px 16px;background:rgba(255,255,255,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.camera__ai-ico{width:36px;height:36px;border-radius:50%;background:#e8f0e4;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.camera__ai-text{flex:1;min-width:0;padding-top:2px}
+.camera__ai-text strong{display:block;font-size:14px;font-weight:600;color:#2d3a2a;margin-bottom:4px}
+.camera__ai-text span{font-size:12px;color:#888;line-height:1.5}
+.camera__focus{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:2;padding:20px 0}
+.camera__ring{width:132px;height:132px;border:1.5px solid rgba(255,255,255,.75);border-radius:50%;position:relative}
+.camera__ring::after{content:'';position:absolute;inset:22px;border:1px solid rgba(255,255,255,.45);border-radius:50%}
+.camera__found{margin-top:22px;font-size:14px;color:rgba(255,255,255,.92);font-weight:500;text-shadow:0 1px 6px rgba(0,0,0,.25)}
+.camera__bar{position:relative;z-index:3;display:flex;align-items:flex-end;justify-content:center;gap:48px;padding:0 28px calc(28px + env(safe-area-inset-bottom,0))}
+.camera__side{display:flex;flex-direction:column;align-items:center;gap:8px;border:none;background:none;cursor:pointer;font-family:inherit;color:rgba(255,255,255,.92);font-size:12px;padding:0;min-width:52px}
+.camera__thumb{width:48px;height:48px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.55);background:rgba(255,255,255,.15)}
+.camera__thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.camera__shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:#fff;cursor:pointer;transition:transform .15s;box-shadow:0 0 0 3px rgba(255,255,255,.25);flex-shrink:0}
+.camera__shutter:active{transform:scale(.92)}
+.camera__flash-btn{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.28);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1}
+.camera__flash.on .camera__flash-btn{background:rgba(255,224,130,.35)}
 
 /* ── Plant Detail ── */
-.plant{padding:0 20px 48px}
-.plant__nav{text-align:center;padding:4px 0 20px;font-family:var(--serif);font-size:20px;font-weight:500;color:var(--text)}
-.plant__back{position:absolute;left:16px;top:52px;width:36px;height:36px;border:none;background:none;cursor:pointer;font-size:20px;color:var(--text);display:none}
-.plant.has-back .plant__back{display:flex;align-items:center;justify-content:center}
-.plant__hero{background:var(--card);border-radius:28px;aspect-ratio:1;max-width:340px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.plant__hero img{width:72%;height:72%;object-fit:contain;filter:drop-shadow(0 6px 16px rgba(0,0,0,.08))}
-.plant__name{font-family:var(--serif);font-size:32px;text-align:center;margin-bottom:20px;color:var(--text)}
-.plant__row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.plant__mini{background:var(--card);border-radius:var(--r-sm);padding:14px 14px 16px;cursor:pointer;transition:opacity .2s}
-.plant__mini:active{opacity:.7}
-.plant__mini h4{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-.plant__mini h4 svg{width:12px;height:12px;opacity:.4}
-.plant__mini p{font-size:11px;line-height:1.5;color:var(--muted)}
-.plant__ask{display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px}
-.plant__ask span{font-size:13px;color:var(--text);display:flex;align-items:center;gap:4px}
-.plant__refresh{border:none;background:none;font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit}
-.plant__chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.plant__chip{padding:10px 16px;border:1px solid #e0e0e0;border-radius:100px;font-size:13px;color:var(--text);background:var(--white);cursor:pointer;font-family:inherit;transition:background .2s}
-.plant__chip:active{background:var(--card)}
-.plant__card{background:var(--white);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px 18px;margin-bottom:10px}
-.plant__card label{font-size:11px;color:#b8a080;display:block;margin-bottom:10px;letter-spacing:.02em}
-.plant__card p{font-size:13px;line-height:1.75;color:var(--text)}
-.plant__metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
-.plant__metric{background:var(--white);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px}
-.plant__metric-top{display:flex;align-items:flex-start;gap:6px;margin-bottom:6px}
-.plant__metric-top svg{width:16px;height:16px;flex-shrink:0;margin-top:2px}
-.plant__metric strong{font-family:var(--serif);font-size:22px;font-weight:500;display:block;line-height:1}
-.plant__metric span{font-size:10px;color:var(--muted);line-height:1.4;display:block;margin-top:4px}
-.plant__bar{height:3px;border-radius:2px;background:#f0f0f0;margin-top:12px;overflow:hidden}
-.plant__bar i{display:block;height:100%;border-radius:2px}
+.plant{padding:0 20px 100px;position:relative}
+.plant__nav{display:flex;align-items:center;padding:4px 0 8px}
+.plant__back,.plant__more{width:44px;height:44px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.plant__back svg,.plant__more svg{width:20px;height:20px}
+.plant__nav-spacer{flex:1}
+.plant__hero-wrap{display:flex;justify-content:center;margin:4px 0 16px}
+.plant__hero{background:linear-gradient(180deg,#f3f3f3,#ececec);border-radius:40px;width:min(100%,300px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 10px 36px rgba(0,0,0,.06)}
+.plant__hero img{width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.1))}
+.plant__hero--loading img{opacity:.35}
+.plant__proc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:13px;color:#999;background:rgba(250,250,250,.55);border-radius:40px}
+.plant__proc .proc__ring{width:32px;height:32px;border:2px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite}
+.plant__name{font-size:28px;font-weight:600;text-align:center;margin-bottom:10px}
+.plant__tags{display:flex;justify-content:center;gap:8px;margin-bottom:18px}
+.plant__tag{font-size:12px;padding:6px 14px;border-radius:100px;background:var(--white);border:1px solid var(--line);color:var(--olive-d)}
+.plant__ai{background:var(--olive-bg);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.plant__ai-hdr{font-size:13px;font-weight:600;color:var(--olive-d);margin-bottom:10px;display:flex;align-items:center;gap:4px}
+.plant__ai-status{font-size:16px;font-weight:600;color:var(--olive);margin-bottom:10px}
+.plant__ai ul{list-style:none;font-size:12px;color:var(--muted);line-height:1.7}
+.plant__ai li::before{content:'· ';color:var(--olive)}
+.plant__tasks{display:flex;gap:8px;overflow-x:auto;margin-bottom:18px;-webkit-overflow-scrolling:touch}
+.plant__tasks::-webkit-scrollbar{display:none}
+.plant__task{flex-shrink:0;width:110px;padding:12px;border-radius:var(--r-sm);background:var(--white);border:1px solid var(--line);font-size:11px}
+.plant__task strong{display:block;font-size:12px;margin:6px 0 2px}
+.plant__task span{color:var(--muted)}
+.plant__actions-hdr{font-size:12px;color:var(--muted);margin-bottom:10px}
+.plant__actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.plant__act{padding:14px 8px;border-radius:var(--r-sm);background:var(--white);border:1px solid var(--line);cursor:pointer;font-family:inherit;font-size:11px;text-align:center}
+.plant__act:active{background:var(--card)}
+.plant__act span{display:block;font-size:18px;margin-bottom:6px}
+.plant__timeline-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.plant__timeline-hdr h4{font-size:14px;font-weight:600}
+.plant__timeline-hdr a{font-size:11px;color:var(--muted);cursor:pointer;text-decoration:none}
+.plant__tl-item{display:flex;gap:12px;margin-bottom:14px;position:relative}
+.plant__tl-item:not(:last-child)::before{content:'';position:absolute;left:5px;top:14px;bottom:-6px;width:1px;background:var(--line)}
+.plant__tl-dot{width:12px;height:12px;border-radius:50%;background:var(--olive-l);border:2px solid var(--olive);flex-shrink:0;margin-top:4px}
+.plant__tl-card{flex:1;background:var(--white);border-radius:var(--r-sm);padding:12px;border:1px solid var(--line);display:flex;gap:10px}
+.plant__tl-card img{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0}
+.plant__tl-card p{font-size:12px;line-height:1.55;flex:1}
+.plant__tl-time{font-size:10px;color:var(--muted);margin-bottom:4px}
+.plant__fab{position:absolute;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--olive);border:none;cursor:pointer;box-shadow:0 4px 20px rgba(90,99,72,.35);display:flex;align-items:center;justify-content:center;z-index:5}
+.plant__fab svg{width:22px;height:22px;color:#fff}
 
-/* ── Chat overlay ── */
+/* ── Drawer ── */
+.drawer-wrap{position:absolute;inset:0;z-index:55;pointer-events:none}
+.drawer-wrap.open{pointer-events:auto}
+.drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;transition:opacity .3s}
+.drawer-wrap.open .drawer-bg{opacity:1}
+.drawer{position:absolute;left:0;top:0;bottom:0;width:min(320px,88%);background:var(--bg);transform:translateX(-100%);transition:transform .35s cubic-bezier(.32,.72,0,1);overflow-y:auto;padding:24px 20px 32px;box-shadow:4px 0 24px rgba(0,0,0,.08)}
+.drawer-wrap.open .drawer{transform:none}
+.drawer__user{display:flex;gap:14px;align-items:center;margin-bottom:24px}
+.drawer__ava{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#c8dcc0,#8faa82);flex-shrink:0}
+.drawer__user h3{font-family:var(--serif);font-size:22px;color:var(--olive-d);margin-bottom:4px}
+.drawer__user p{font-size:12px;color:var(--muted)}
+.drawer__stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.drawer__stat{background:var(--white);border-radius:var(--r-sm);padding:14px 8px;text-align:center}
+.drawer__stat strong{display:block;font-size:20px;font-weight:600;color:var(--olive-d);margin-bottom:2px}
+.drawer__stat span{font-size:10px;color:var(--muted)}
+.drawer__life{background:var(--white);border-radius:var(--r);padding:16px;margin-bottom:20px;border:1px solid var(--line)}
+.drawer__life h4{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.drawer__life li{font-size:12px;color:var(--muted);line-height:1.6;list-style:none;padding-left:14px;position:relative}
+.drawer__life li::before{content:'';position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:50%;background:var(--olive)}
+.drawer__menu{background:var(--white);border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
+.drawer__item{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;font-size:14px;cursor:pointer;border:none;background:none;width:100%;font-family:inherit;text-align:left;color:var(--text)}
+.drawer__item:not(:last-child){border-bottom:1px solid var(--line)}
+.drawer__item span{display:flex;align-items:center;gap:10px}
+.drawer__thanks{text-align:center;font-size:12px;color:var(--muted);margin-top:24px;line-height:1.6}
+.drawer__logout{display:block;width:100%;text-align:center;margin-top:16px;border:none;background:none;font-size:12px;color:#ccc;cursor:pointer;font-family:inherit;padding:8px}
+
+/* ── Settings modal ── */
+.modal-wrap{position:absolute;inset:0;z-index:56;pointer-events:none;display:flex;align-items:flex-end}
+.modal-wrap.open{pointer-events:auto}
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;transition:opacity .3s}
+.modal-wrap.open .modal-bg{opacity:1}
+.modal{width:100%;background:var(--bg);border-radius:24px 24px 0 0;padding:20px 20px 36px;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:85%;overflow-y:auto;position:relative}
+.modal-wrap.open .modal{transform:none}
+.modal__hdr{margin-bottom:20px;position:relative}
+.modal__hdr h2{font-size:22px;font-weight:600;margin-bottom:4px}
+.modal__hdr p{font-size:12px;color:var(--muted)}
+.modal__close{position:absolute;right:0;top:0;width:44px;height:44px;border:none;background:none;cursor:pointer;font-size:20px;color:var(--muted)}
+.modal__sec{margin-bottom:18px}
+.modal__sec label{font-size:11px;color:var(--muted);display:block;margin-bottom:8px;padding-left:4px}
+.modal__group{background:var(--white);border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line)}
+.modal__row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;font-size:14px}
+.modal__row:not(:last-child){border-bottom:1px solid var(--line)}
+.modal__row button,.modal__row a{border:none;background:none;font-family:inherit;font-size:14px;cursor:pointer;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:4px}
+.modal__toggle{width:44px;height:26px;border-radius:13px;background:#ddd;border:none;cursor:pointer;position:relative;transition:background .2s}
+.modal__toggle.on{background:var(--olive)}
+.modal__toggle::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.modal__toggle.on::after{transform:translateX(18px)}
+
+/* ── Overlays ── */
 .overlay{position:absolute;inset:0;background:rgba(0,0,0,.3);z-index:50;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;display:flex;align-items:flex-end}
 .overlay.open{opacity:1;visibility:visible}
 .sheet{width:100%;background:var(--white);border-radius:24px 24px 0 0;padding:20px 20px 36px;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:70%;overflow-y:auto}
@@ -112,449 +334,827 @@ body{font-family:var(--sans);background:#ddd;display:flex;align-items:center;jus
 .sheet__handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px}
 .sheet h3{font-size:17px;font-weight:600;margin-bottom:12px}
 .sheet p{font-size:14px;line-height:1.7;color:#555}
-
-.toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.96);background:rgba(26,26,26,.92);color:#fff;padding:14px 22px;border-radius:16px;font-size:14px;line-height:1.5;text-align:center;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:60;max-width:280px;white-space:normal}
+.toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.96);background:rgba(26,26,26,.92);color:#fff;padding:14px 22px;border-radius:16px;font-size:14px;line-height:1.5;text-align:center;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:60;max-width:280px}
 .toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-
-.proc{position:absolute;inset:0;background:rgba(250,250,250,.95);z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-.proc.on{display:flex}
-.proc__ring{width:40px;height:40px;border:2px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="phone" id="phone">
-  <div class="status">
-    <span id="clock">9:41</span>
-    <span class="status__r">●●●● ▮</span>
-  </div>
+  <header class="ios-nav" id="status-bar">
+    <div class="ios-nav__inner">
+      <span id="clock">9:41</span>
+      <span class="ios-nav__sys">●●●● ▮</span>
+    </div>
+  </header>
 
   <div class="view">
-    <!-- Calendar -->
-    <section class="page active" id="page-calendar">
-      <div class="cal">
-        <h1 class="cal__today">Today</h1>
-        <p class="cal__date" id="cal-date">June.23</p>
-        <div class="cal__card">
-          <div class="cal__grid" id="cal-grid"></div>
+    <!-- P1 Home -->
+    <section class="page active" id="page-home">
+      <div class="home">
+        <div class="home__top">
+          <button class="home__ava" id="btn-drawer" type="button" aria-label="个人资料"></button>
+          <button class="home__set" id="btn-settings" type="button" aria-label="设置"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
         </div>
-        <p class="cal__hint" id="cal-hint">点击下方相机开始记录</p>
-      </div>
-      <div class="cal__fab-wrap">
-        <button class="cal__fab" id="btn-camera" aria-label="拍照">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </button>
+        <div class="home__collage" aria-hidden="true">
+          <img class="home__collage-art" src="assets/home-plants-hero.png" alt="">
+        </div>
+        <div class="home__footer">
+          <div class="home__body">
+            <h1>记录第一株植物</h1>
+            <p>每天拍一张照片，见证植物一点点长大</p>
+            <p>每一株植物，都值得被认真记录 🌱</p>
+          </div>
+          <div class="home__cta-wrap">
+            <button class="home__cta" id="btn-start-photo" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              开始拍照
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Gallery -->
-    <section class="page" id="page-gallery">
-      <div class="gal">
-        <div class="gal__nav">
-          <button class="gal__close" id="gal-close">×</button>
-          <div class="gal__title">最近项目 <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="#333" stroke-width="1.2" fill="none"/></svg></div>
-          <span style="width:36px"></span>
+    <!-- My Garden (tab) -->
+    <section class="page" id="page-garden">
+      <div class="garden">
+        <div class="hdr">
+          <button class="hdr__avatar" id="btn-drawer-garden" aria-label="个人资料"></button>
+          <div class="hdr__title">My Garden</div>
+          <button class="hdr__btn" id="btn-settings-garden" aria-label="设置"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
         </div>
-        <div class="gal__grid" id="gal-grid"></div>
-      </div>
-      <div class="gal__bar">
-        <button class="gal__preview" id="gal-preview">预览</button>
-        <button class="gal__confirm" id="gal-confirm">确认</button>
+        <div class="garden__hero" id="btn-record">
+          <button class="garden__cam" type="button" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+          <h2>记录今日植物状态</h2>
+          <p>拍摄植物照片，AI 自动记录成长变化</p>
+        </div>
+        <button class="garden__album" id="btn-album" type="button">🖼 从相册选择照片</button>
+        <div class="garden__sec">
+          <div><h3>我的植物</h3><span>MY PLANTS</span></div>
+          <a id="btn-all-plants">查看全部</a>
+        </div>
+        <div class="garden__grid" id="garden-grid"></div>
       </div>
     </section>
 
-    <!-- Profile -->
-    <section class="page" id="page-profile">
-      <div class="prof">
-        <div class="prof__card" id="prof-sticker"></div>
-        <input class="prof__field" id="inp-nick" placeholder="昵称" maxlength="20">
-        <input class="prof__field" id="inp-loc" placeholder="记录地点" maxlength="30">
-        <button class="prof__skip" id="prof-skip">仅记录，不填写</button>
+    <!-- Growth Journey -->
+    <section class="page" id="page-journal">
+      <div class="journal">
+        <div class="hdr">
+          <button class="hdr__avatar" id="btn-drawer2" aria-label="个人资料"></button>
+          <div class="hdr__title">My Garden</div>
+          <button class="hdr__btn" id="btn-settings2" aria-label="设置"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="journal__filters" id="j-filters"></div>
+        <div class="cal">
+          <h1 class="cal__today">Today</h1>
+          <p class="cal__date" id="cal-date">June.23</p>
+          <div class="cal__card">
+            <div class="cal__grid" id="cal-grid"></div>
+          </div>
+          <p class="cal__hint" id="cal-hint">点击下方相机开始记录</p>
+          <div class="cal__fab-wrap">
+            <button class="cal__fab" id="btn-cal-camera" type="button" aria-label="拍照">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="journal__rec-hdr"><h3>每日记录</h3><a id="btn-all-rec">查看全部</a></div>
+        <div class="rec-list" id="rec-list"></div>
+      </div>
+    </section>
+
+    <!-- Daily Check-in -->
+    <section class="page" id="page-checkin">
+      <div class="checkin">
+        <div class="checkin__nav">
+          <button class="checkin__back" id="checkin-back" type="button" aria-label="返回"><svg viewBox="0 0 20 20" fill="none"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="checkin__hdr">
+            <h1>今天看看它</h1>
+            <p>记录植物的每一天 🌱</p>
+          </div>
+          <div class="checkin__nav-spacer" aria-hidden="true"></div>
+        </div>
+        <div class="checkin__card">
+          <h2>1. 今天浇水了吗？</h2>
+          <div class="checkin__row2" id="checkin-water">
+            <button class="checkin__opt on" type="button" data-w="yes">
+              <svg viewBox="0 0 28 28" fill="none"><path d="M14 4c-3 5-7 8-7 13a7 7 0 1014 0c0-5-4-8-7-13z" fill="currentColor" opacity=".9"/><path d="M14 10v8M11 14h6" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
+              <span>是</span>
+            </button>
+            <button class="checkin__opt" type="button" data-w="no">
+              <svg viewBox="0 0 28 28" fill="none"><path d="M14 4c-3 5-7 8-7 13a7 7 0 1014 0c0-5-4-8-7-13z" fill="currentColor" opacity=".35"/><path d="M9 9l10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>否</span>
+            </button>
+          </div>
+        </div>
+        <div class="checkin__card">
+          <h2>2. 今天状态怎么样？</h2>
+          <div class="checkin__row3" id="checkin-mood">
+            <button class="checkin__mood on" type="button" data-m="great">
+              <span class="checkin__mood-ico checkin__mood-ico--great">😊</span>
+              <span>很棒</span>
+            </button>
+            <button class="checkin__mood" type="button" data-m="okay">
+              <span class="checkin__mood-ico checkin__mood-ico--okay">😐</span>
+              <span>还行</span>
+            </button>
+            <button class="checkin__mood" type="button" data-m="bad">
+              <span class="checkin__mood-ico checkin__mood-ico--bad">😟</span>
+              <span>不太好</span>
+            </button>
+          </div>
+        </div>
+        <div class="checkin__card">
+          <h2>3. 拍张照</h2>
+          <button class="checkin__photo" id="checkin-photo" type="button">
+            <div class="checkin__photo-ph" id="checkin-ph"></div>
+            <img id="checkin-preview" alt="">
+            <div class="checkin__photo-overlay" id="checkin-photo-overlay">
+              <span class="checkin__cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+              <span>点击拍照或从相册选择</span>
+            </div>
+          </button>
+        </div>
+        <button class="checkin__submit" id="checkin-submit" type="button">完成记录</button>
+      </div>
+    </section>
+
+    <!-- Camera -->
+    <section class="page page--dark" id="page-camera">
+      <div class="camera">
+        <div class="camera__bg" id="cam-bg"></div>
+        <div class="camera__shade" aria-hidden="true"></div>
+        <div class="camera__nav">
+          <button class="camera__back" id="cam-close" type="button" aria-label="返回"><svg viewBox="0 0 20 20" fill="none"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <h1 class="camera__title">拍照记录<span class="camera__spark">✦</span></h1>
+          <button class="camera__more" id="cam-more" type="button" aria-label="更多"><svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/></svg></button>
+        </div>
+        <div class="camera__ai" id="cam-tip">
+          <div class="camera__ai-ico">🌿</div>
+          <div class="camera__ai-text">
+            <strong id="cam-tip-name">正在观察：琴叶榕</strong>
+            <span id="cam-tip-desc">目前光照充足，建议在正午过后补水。</span>
+          </div>
+        </div>
+        <div class="camera__focus">
+          <div class="camera__ring"></div>
+          <p class="camera__found" id="cam-found">已发现植物</p>
+        </div>
+        <div class="camera__bar">
+          <button class="camera__side" id="cam-album" type="button">
+            <div class="camera__thumb"><img src="https://images.unsplash.com/photo-1459411552884-841b9b7da852?w=120&h=120&fit=crop&q=80" alt=""></div>
+            相册
+          </button>
+          <button class="camera__shutter" id="cam-shutter" type="button" aria-label="拍照"></button>
+          <button class="camera__side camera__flash" id="cam-flash" type="button">
+            <span class="camera__flash-btn">⚡</span>
+            闪光灯
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- P2 Member -->
+    <section class="page" id="page-member">
+      <div class="member">
+        <div class="member__nav">
+          <button class="member__close" id="member-close" type="button" aria-label="关闭"><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          <div class="member__title">发现了 1 个新成员</div>
+          <div class="member__nav-spacer" aria-hidden="true"></div>
+        </div>
+        <div class="member__hero" id="member-hero"></div>
+        <div class="member__stack">
+          <div class="member__card">
+            <div class="member__card-hdr">✦ AI 观察结果</div>
+            <div class="member__ai-text"><span>🌿</span><p>整体状态良好，叶片颜色健康，暂无明显缺水迹象，长势稳定。建议放置在明亮散射光环境中，避免长时间阳光直射，保持土壤轻微湿润即可。</p></div>
+          </div>
+          <div class="member__card">
+            <div class="member__card-hdr">🪴 植物档案</div>
+            <div class="member__field">
+              <label>设置昵称</label>
+              <input class="member__nick" id="inp-nick" type="text" placeholder="给植物起个昵称" maxlength="20" autocomplete="off">
+            </div>
+            <div class="member__field">
+              <label>植物品种</label>
+              <div class="member__row">
+                <div class="member__row-val"><span>🌿</span>琴叶榕</div>
+                <span style="color:#ccc;font-size:14px">›</span>
+              </div>
+            </div>
+            <div class="member__divider"></div>
+            <div class="member__field">
+              <label>陪伴时长</label>
+              <div class="member__row">
+                <input id="inp-days" placeholder="例如：30天" maxlength="20" style="border:none;flex:1;padding:0">
+                <span style="color:#ccc;font-size:14px">☰</span>
+              </div>
+            </div>
+            <div class="member__divider"></div>
+            <div class="member__field">
+              <label>📅 加入花园时间</label>
+              <div class="member__row">
+                <div class="member__row-val" id="member-date">2026年6月25日</div>
+                <span style="color:#ccc;font-size:16px">📅</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="member__cta" id="member-create" type="button">创建成员档案 <span>→</span></button>
+        <p class="member__foot">点击开始后，AI 将自动为你规划养护计划</p>
       </div>
     </section>
 
     <!-- Plant Detail -->
     <section class="page" id="page-plant">
-      <div class="plant" id="plant-wrap">
-        <button class="plant__back" id="plant-back">‹</button>
-        <div class="plant__nav">Plant Moment</div>
-        <div class="plant__hero" id="plant-hero"></div>
-        <h2 class="plant__name" id="plant-name">大龟背竹</h2>
-        <div class="plant__row">
-          <div class="plant__mini" data-toast="今日诊断详情">
-            <h4>今日诊断 <svg viewBox="0 0 8 12"><path d="M2 2l4 4-4 4" stroke="currentColor" stroke-width="1.2" fill="none"/></svg></h4>
-            <p id="txt-diag">急需补水，保持土壤湿润</p>
-          </div>
-          <div class="plant__mini" data-toast="今日心情记录">
-            <h4>今日心情 <svg viewBox="0 0 8 12"><path d="M2 2l4 4-4 4" stroke="currentColor" stroke-width="1.2" fill="none"/></svg></h4>
-            <p id="txt-mood">叶片舒展，状态平稳</p>
-          </div>
+      <div class="plant">
+        <div class="plant__nav">
+          <button class="plant__back" id="plant-back" type="button" aria-label="返回"><svg viewBox="0 0 20 20" fill="none"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <span class="plant__nav-spacer"></span>
+          <button class="plant__more" id="plant-more" type="button" aria-label="更多"><svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/></svg></button>
         </div>
-        <div class="plant__ask">
-          <span>✦ 向植物医生提问</span>
-          <button class="plant__refresh" id="btn-refresh">换一换</button>
+        <div class="plant__hero-wrap"><div class="plant__hero" id="plant-hero"></div></div>
+        <h2 class="plant__name" id="plant-name">小绿</h2>
+        <div class="plant__tags" id="plant-tags"></div>
+        <div class="plant__ai">
+          <div class="plant__ai-hdr">✦ AI 状态分析</div>
+          <div class="plant__ai-status">🌿 状态良好</div>
+          <ul>
+            <li>叶片颜色健康，呈现自然光泽</li>
+            <li>暂无明显缺水迹象</li>
+            <li>生长环境光照适中</li>
+          </ul>
         </div>
-        <div class="plant__chips" id="chip-box"></div>
-        <div class="plant__card">
-          <label>深度诊断报告</label>
-          <p id="txt-report">叶片发黄主要是光照偏弱导致的光合作用下降，目前属于轻度应激状态。</p>
+        <div class="plant__tasks">
+          <div class="plant__task"><span>💧</span><strong>浇水</strong><span>预计 2 天后</span></div>
+          <div class="plant__task"><span>🌱</span><strong>施肥</strong><span>预计 12 天后</span></div>
+          <div class="plant__task"><span>✂️</span><strong>修剪</strong><span>预计 30 天后</span></div>
         </div>
-        <div class="plant__card">
-          <label>建议行动方案</label>
-          <p id="txt-action">建议在 2–3 天内增加散射光照，否则会进一步影响新叶生长。</p>
+        <p class="plant__actions-hdr">今天为 <span id="plant-act-name">小绿</span> 做了什么？</p>
+        <div class="plant__actions">
+          <button class="plant__act" data-act="浇水" type="button"><span>💧</span>已浇水</button>
+          <button class="plant__act" data-act="施肥" type="button"><span>🌱</span>已施肥</button>
+          <button class="plant__act" data-act="修剪" type="button"><span>✂️</span>已修剪</button>
         </div>
-        <div class="plant__metrics">
-          <div class="plant__metric">
-            <div class="plant__metric-top">
-              <svg viewBox="0 0 16 16" fill="none"><path d="M9 2L4 9h4l-1 5 6-8H9L9 2z" fill="#e57373"/></svg>
-              <div><strong id="val-risk">45%</strong><span>未来3天局部枯萎风险</span></div>
-            </div>
-            <div class="plant__bar"><i style="width:45%;background:#e57373"></i></div>
-          </div>
-          <div class="plant__metric">
-            <div class="plant__metric-top">
-              <svg viewBox="0 0 16 16" fill="none"><path d="M2 12l4-6 3 3 5-8" stroke="#81c784" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-              <div><strong id="val-recover">15%</strong><span>预计5天后好转</span></div>
-            </div>
-            <div class="plant__bar"><i style="width:15%;background:#81c784"></i></div>
-          </div>
-        </div>
+        <div class="plant__timeline-hdr"><h4>成长轨迹</h4><a id="btn-tl-all">查看全部档案</a></div>
+        <div id="plant-timeline"></div>
+        <button class="plant__fab" id="plant-fab" type="button" aria-label="拍照"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
       </div>
     </section>
   </div>
 
-  <div class="proc" id="proc"><div class="proc__ring"></div><span style="font-size:13px;color:#999">正在识别植物轮廓…</span></div>
+  <nav class="tabbar" id="tabbar">
+    <button class="tabbar__item on" data-tab="home" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>首页</button>
+    <button class="tabbar__item" data-tab="journal" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>成长历程</button>
+  </nav>
+
+  <!-- Profile drawer -->
+  <div class="drawer-wrap" id="drawer-wrap">
+    <div class="drawer-bg" id="drawer-bg"></div>
+    <aside class="drawer">
+      <div class="drawer__user">
+        <div class="drawer__ava"></div>
+        <div><h3 id="drawer-name">Flora</h3><p id="drawer-sub">正在陪伴 6 株植物成长</p></div>
+      </div>
+      <div class="drawer__stats">
+        <div class="drawer__stat"><strong id="st-plants">6</strong><span>株植物</span></div>
+        <div class="drawer__stat"><strong id="st-records">0</strong><span>次记录</span></div>
+        <div class="drawer__stat"><strong>128</strong><span>天陪伴</span></div>
+      </div>
+      <div class="drawer__life">
+        <h4>📖 我的植物人生</h4>
+        <ul><li>最近发现 2 片新叶</li><li>已连续记录 <span id="st-streak">0</span> 天</li></ul>
+      </div>
+      <div class="drawer__menu">
+        <button class="drawer__item" data-sheet="导出成长记录" type="button"><span>📤 导出成长记录</span>›</button>
+        <button class="drawer__item" data-sheet="数据备份" type="button"><span>☁️ 数据备份</span>›</button>
+        <button class="drawer__item" data-sheet="帮助中心" type="button"><span>❓ 帮助中心</span>›</button>
+        <button class="drawer__item" data-sheet="关于植物成长" type="button"><span>ℹ️ 关于植物成长</span>›</button>
+      </div>
+      <p class="drawer__thanks">谢谢你一直认真照顾它们 🌱</p>
+      <button class="drawer__logout" type="button" id="btn-logout">退出当前账号</button>
+    </aside>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="modal-wrap" id="modal-wrap">
+    <div class="modal-bg" id="modal-bg"></div>
+    <div class="modal">
+      <div class="modal__hdr">
+        <h2>设置</h2>
+        <p>根据你的习惯调整植物陪伴体验</p>
+        <button class="modal__close" id="modal-close" type="button">×</button>
+      </div>
+      <div class="modal__sec"><label>通知设置</label>
+        <div class="modal__group">
+          <div class="modal__row"><span>植物记录提醒</span><button class="modal__toggle on" data-key="n1" type="button"></button></div>
+          <div class="modal__row"><span>养护建议提醒</span><button class="modal__toggle on" data-key="n2" type="button"></button></div>
+          <div class="modal__row"><span>每日成长提醒</span><button class="modal__toggle" data-key="n3" type="button"></button></div>
+        </div>
+      </div>
+      <div class="modal__sec"><label>数据设置</label>
+        <div class="modal__group">
+          <div class="modal__row"><button type="button" data-sheet="自动备份">自动备份</button><span>›</span></div>
+          <div class="modal__row"><button type="button" data-sheet="同步照片记录">同步照片记录</button><span>›</span></div>
+          <div class="modal__row"><button type="button" data-sheet="导出成长档案">导出成长档案</button><span>›</span></div>
+        </div>
+      </div>
+      <div class="modal__sec"><label>显示设置</label>
+        <div class="modal__group">
+          <div class="modal__row"><span>深色模式</span><button class="modal__toggle" data-key="dark" type="button"></button></div>
+          <div class="modal__row"><span>动态效果</span><button class="modal__toggle on" data-key="motion" type="button"></button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="overlay"><div class="sheet"><div class="sheet__handle"></div><h3 id="sheet-title"></h3><p id="sheet-body"></p></div></div>
+  <div class="proc" id="proc"><div class="proc__ring"></div><span class="proc__text" id="proc-text">正在识别植物轮廓…</span></div>
   <div class="toast" id="toast"></div>
-  <input type="file" id="file-input" accept="image/*" capture="environment" hidden>
+  <input type="file" id="file-input" accept="image/*" hidden>
 </div>
 
+<script src="modules/cutout/cutout-engine.js"></script>
 <script>
+const Cutout = PlantCutoutEngine;
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const QUESTIONS=[
-  ['它为什么黄叶？','黄叶通常由浇水过多或光照不足引起。先检查土壤，移至明亮散射光处观察。'],
-  ['要不要换盆？','根系冒出排水孔或生长停滞时该换盆了，春季是最佳时机。'],
-  ['叶子卷边怎么办？','卷边多与干燥或强光有关，增加湿度并避开直射阳光。'],
-  ['多久浇一次水？','龟背竹喜湿润但不耐涝，土表干燥 2cm 再浇透即可。']
-];
-const GAL_COLORS=[
-  ['#8fbc8f','#6b9e78'],['#87ceeb','#5b8fb9'],['#deb887','#c49a6c'],
-  ['#98d8c8','#6bb89a'],['#f0c987','#d4a96a'],['#a8c8e8','#7aa8cc'],
-  ['#c5e1a5','#8bc34a'],['#90caf9','#42a5f5'],['#ffcc80','#ffa726'],
-  ['#b0bec5','#78909c'],['#ce93d8','#ab47bc'],['#80cbc4','#26a69a'],
-  ['#ffab91','#ff7043'],['#fff59d','#fdd835'],['#bcaaa4','#8d6e63'],
-  ['#a5d6a7','#66bb6a'],['#81d4fa','#29b6f6'],['#ffe082','#ffca28']
+const DEMO_PLANTS = [
+  {nick:'小绿',species:'绿萝',days:128,update:'3天前更新',photo:'https://images.unsplash.com/photo-1593482892291-0f4f504a7b05?w=480&h=480&fit=crop&q=80'},
+  {nick:'阿蒙',species:'龟背竹',days:45,update:'1天前更新',photo:'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=480&h=480&fit=crop&q=80'},
+  {nick:'虎子',species:'虎皮兰',days:210,update:'刚刚更新',photo:'https://images.unsplash.com/photo-1593691509533-56da498309e9?w=480&h=480&fit=crop&q=80'},
+  {nick:'珍珠吊兰',species:'多肉植物',days:30,update:'刚刚更新',photo:'https://images.unsplash.com/photo-1459411552884-841b9b7da852?w=480&h=480&fit=crop&q=80'},
+  {nick:'皮皮',species:'拟石莲花属',days:15,update:'2小时前更新',photo:'https://images.unsplash.com/photo-1509937528035-ad25c08acfc5?w=480&h=480&fit=crop&q=80'},
+  {nick:'琴叶榕',species:'桑科榕属',days:60,update:'昨天更新',photo:'https://images.unsplash.com/photo-1545241047-6083a3684587?w=480&h=480&fit=crop&q=80'}
 ];
 
-const Cutout={
-  MAX:800,STROKE:2,PLANT:[61,107,82],
-
-  load(src){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=src})},
-
-  sampleBg(d,w,h){
-    const pts=[];
-    for(let x=0;x<w;x++){pts.push([x,0],[x,h-1])}
-    for(let y=1;y<h-1;y++){pts.push([0,y],[w-1,y])}
-    let r=0,g=0,b=0,n=0;
-    pts.forEach(([x,y])=>{const k=(y*w+x)*4;if(d[k+3]<30)return;r+=d[k];g+=d[k+1];b+=d[k+2];n++});
-    if(!n)return{r:255,g:255,b:255};
-    return{r:r/n,g:g/n,b:b/n};
-  },
-
-  isBg(r,g,b,a,bg){
-    if(a<18)return true;
-    const lum=.299*r+.587*g+.114*b;
-    const dist=Math.hypot(r-bg.r,g-bg.g,b-bg.b);
-    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
-    const sat=mx?(mx-mn)/mx:0;
-    return dist<52||lum>246||(lum>212&&sat<.14);
-  },
-
-  buildMask(d,w,h){
-    const mask=new Uint8Array(w*h);
-    let tr=0;
-    for(let i=0;i<w*h;i++)if(d[i*4+3]<20)tr++;
-    const useAlpha=tr/(w*h)>.04;
-
-    if(useAlpha){
-      for(let i=0;i<w*h;i++)mask[i]=d[i*4+3]>18?1:0;
-    }else{
-      const bg=this.sampleBg(d,w,h);
-      for(let i=0;i<w*h;i++){
-        const k=i*4;
-        mask[i]=this.isBg(d[k],d[k+1],d[k+2],d[k+3],bg)?0:1;
-      }
-    }
-    return mask;
-  },
-
-  keepLargest(mask,w,h){
-    const vis=new Uint8Array(w*h),lbl=new Int32Array(w*h).fill(-1);
-    let best=0,bestId=-1,id=0;
-    const flood=(sx,sy,tag)=>{
-      const st=[[sx,sy]];let n=0;
-      while(st.length){
-        const[x,y]=st.pop(),i=y*w+x;
-        if(x<0||y<0||x>=w||y>=h||vis[i]||!mask[i])continue;
-        vis[i]=1;lbl[i]=tag;n++;
-        st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
-      }
-      return n;
-    };
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-      const i=y*w+x;
-      if(!vis[i]&&mask[i]){const n=flood(x,y,id);if(n>best){best=n;bestId=id}id++}
-    }
-    if(best<16){
-      let sum=0;for(let i=0;i<mask.length;i++)sum+=mask[i];
-      if(sum<16)throw new Error('no subject');
-      return mask;
-    }
-    const out=new Uint8Array(w*h);
-    for(let i=0;i<w*h;i++)out[i]=lbl[i]===bestId?1:0;
-    return out;
-  },
-
-  maskToSilhouette(mask,w,h){
-    const id=new ImageData(w,h),[pr,pg,pb]=this.PLANT;
-    for(let i=0;i<w*h;i++){
-      const o=i*4;
-      if(mask[i]){id.data[o]=pr;id.data[o+1]=pg;id.data[o+2]=pb;id.data[o+3]=255}
-    }
-    return id;
-  },
-
-  dilate(mask,w,h,r){
-    const out=new Uint8Array(w*h),r2=r*r;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-      const i=y*w+x;
-      if(mask[i]){out[i]=1;continue}
-      let hit=false;
-      for(let dy=-r;dy<=r&&!hit;dy++)for(let dx=-r;dx<=r&&!hit;dx++){
-        if(dx*dx+dy*dy>r2)continue;
-        const nx=x+dx,ny=y+dy;
-        if(nx>=0&&ny>=0&&nx<w&&ny<h&&mask[ny*w+nx])hit=true;
-      }
-      out[i]=hit?1:0;
-    }
-    return out;
-  },
-
-  boundsFromMask(mask,w,h){
-    let mx=w,my=h,Mx=0,My=0;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(mask[y*w+x]){
-      mx=Math.min(mx,x);my=Math.min(my,y);Mx=Math.max(Mx,x);My=Math.max(My,y);
-    }
-    if(Mx<mx)return null;
-    return{mx,my,w:Mx-mx+1,h:My-my+1};
-  },
-
-  addStroke(sil,w,h){
-    const S=this.STROKE,pad=S+2,ow=w+pad*2,oh=h+pad*2;
-    const alpha=new Uint8Array(w*h);
-    for(let i=0;i<w*h;i++)alpha[i]=sil.data[i*4+3]>127?1:0;
-    const ring=this.dilate(alpha,w,h,S);
-    const img=new ImageData(ow,oh);
-    const[pr,pg,pb]=this.PLANT;
-    for(let y=0;y<oh;y++)for(let x=0;x<ow;x++){
-      const cx=x-pad,cy=y-pad,di=(y*ow+x)*4;
-      if(cx<0||cy<0||cx>=w||cy>=h){img.data[di+3]=0;continue}
-      const ai=cy*w+cx;
-      if(alpha[ai]){
-        img.data[di]=pr;img.data[di+1]=pg;img.data[di+2]=pb;img.data[di+3]=255;
-      }else if(ring[ai]){
-        img.data[di]=255;img.data[di+1]=255;img.data[di+2]=255;img.data[di+3]=255;
-      }else img.data[di+3]=0;
-    }
-    const c=document.createElement('canvas');c.width=ow;c.height=oh;
-    c.getContext('2d').putImageData(img,0,0);
-    return c.toDataURL('image/png');
-  },
-
-  process(id,w,h){
-    let mask=this.buildMask(id.data,w,h);
-    mask=this.keepLargest(mask,w,h);
-    const b=this.boundsFromMask(mask,w,h);
-    if(!b||b.w<3)throw new Error('no subject');
-    const cropped=new Uint8Array(b.w*b.h);
-    for(let y=0;y<b.h;y++)for(let x=0;x<b.w;x++)cropped[y*b.w+x]=mask[(b.my+y)*w+b.mx+x];
-    const sil=this.maskToSilhouette(cropped,b.w,b.h);
-    return this.addStroke(sil,b.w,b.h);
-  },
-
-  async fromFile(file){
-    const url=URL.createObjectURL(file);
-    try{
-      const img=await this.load(url);
-      const sc=Math.min(1,this.MAX/Math.max(img.naturalWidth,img.naturalHeight));
-      const w=Math.max(1,Math.round(img.naturalWidth*sc));
-      const h=Math.max(1,Math.round(img.naturalHeight*sc));
-      const c=document.createElement('canvas');c.width=w;c.height=h;
-      const ctx=c.getContext('2d',{willReadFrequently:true});
-      ctx.clearRect(0,0,w,h);
-      ctx.drawImage(img,0,0,w,h);
-      return this.process(ctx.getImageData(0,0,w,h),w,h);
-    }finally{URL.revokeObjectURL(url)}
-  },
-
-  async fromCanvas(c){
-    return this.process(c.getContext('2d').getImageData(0,0,c.width,c.height),c.width,c.height);
-  },
-
-  drawLeaf(ctx,w,h,type){
-    ctx.fillStyle='#3d6b52';
-    if(type==='pot'){ctx.fillStyle='#c67b4e';ctx.beginPath();ctx.moveTo(w*.28,h*.72);ctx.lineTo(w*.72,h*.72);ctx.lineTo(w*.68,h*.88);ctx.lineTo(w*.32,h*.88);ctx.fill();ctx.fillStyle='#3d6b52'}
-    if(type==='monstera'||type==='pot'){
-      const cx=w/2,cy=h*(type==='pot'?.42:.5);
-      ctx.beginPath();ctx.moveTo(cx,cy-h*.28);ctx.bezierCurveTo(cx-w*.3,cy-h*.1,cx-w*.28,cy+h*.2,cx,cy+h*.28);ctx.bezierCurveTo(cx+w*.28,cy+h*.2,cx+w*.3,cy-h*.1,cx,cy-h*.28);ctx.fill();
-      ctx.fillStyle='rgba(30,50,38,.3)';[[-.1,-.05],[.08,.02],[-.02,.12]].forEach(([fx,fy])=>{ctx.beginPath();ctx.ellipse(cx+fx*w,cy+fy*h,8,14,0,0,Math.PI*2);ctx.fill()});ctx.fillStyle='#3d6b52';
-      if(type==='pot'){ctx.beginPath();ctx.ellipse(cx-w*.15,cy+h*.05,14,22,-.4,0,Math.PI*2);ctx.ellipse(cx+w*.12,cy+h*.02,12,20,.35,0,Math.PI*2);ctx.fill()}
-    }else if(type==='succulent'){for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(w/2,w*.35+i*16,14-i*2,28,0,0,Math.PI*2);ctx.fill()}}
-    else if(type==='leaf'){ctx.beginPath();ctx.moveTo(w/2,h*.15);ctx.bezierCurveTo(w*.2,h*.4,w*.25,h*.75,w/2,h*.85);ctx.bezierCurveTo(w*.75,h*.75,w*.8,h*.4,w/2,h*.15);ctx.fill()}
-    else{ctx.beginPath();ctx.arc(w/2,h*.5,40,0,Math.PI*2);ctx.fill()}
-  },
-
-  async preset(type){
-    const c=document.createElement('canvas');c.width=240;c.height=280;
-    const ctx=c.getContext('2d');ctx.fillStyle='#f0f0f0';ctx.fillRect(0,0,240,280);
-    this.drawLeaf(ctx,240,280,type);
-    return this.fromCanvas(c);
-  }
-};
-
-const S={
-  page:'calendar',galSel:null,qIdx:0,
-  plant:{name:'大龟背竹',nick:'',loc:'',sticker:null},
-  stickers:{},
-  demo:[{day:7,type:'pot',rot:-8},{day:15,type:'succulent',rot:12},{day:18,type:'pot',rot:-4},{day:26,type:'leaf',rot:6}]
+const S = {
+  tab:'home', page:'home',
+  stroke:3, archiveStroke:6, flashOn:false,
+  journalFilter:'全部',
+  plant:{name:'新植物',nick:'',species:'龟背竹',days:'',sticker:null,sourceBlob:null,sourcePreview:null},
+  stickers:{}, records:[],
+  fromPage:'home', plantBackTo:'journal',
+  settings:{n1:true,n2:true,n3:false,dark:false,motion:true},
+  checkinFrom:'home', checkinFirst:false,
+  checkin:{watering:'yes',mood:'great',photoBlob:null,photoPreview:null},
+  cameraFirst:false
 };
 
 function $(id){return document.getElementById(id)}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
-function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));S.page=name}
-function openSheet(title,body){$('sheet-title').textContent=title;$('sheet-body').textContent=body;$('overlay').classList.add('open')}
 function setImg(el,url){el.innerHTML=`<img src="${url}" alt="" draggable="false">`}
+function openSheet(title,body){$('sheet-title').textContent=title;$('sheet-body').textContent=body||'功能开发中，敬请期待。';$('overlay').classList.add('open')}
+function fmtTime(d){return d.toLocaleTimeString('zh-CN',{hour:'numeric',minute:'2-digit',hour12:true})}
+
+const TAB_PAGES = new Set(['home','journal']);
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
+  S.page=name;
+  const isTab=TAB_PAGES.has(name);
+  const showTabbar=isTab&&name!=='home'&&name!=='member'&&name!=='checkin';
+  $('tabbar').classList.toggle('hidden',!showTabbar);
+  $('status-bar').classList.toggle('hide',name==='camera');
+  if(isTab){S.tab=name;updateTabbar()}
+}
+function showFlow(name){S.fromPage=S.page;showPage(name)}
+function showTab(name){showPage(name)}
+
+function showProc(msg){$('proc-text').textContent=msg;$('proc').classList.add('on')}
+function hideProc(){$('proc').classList.remove('on')}
+function formatJoinDate(d){return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`}
+
+function updateTabbar(){
+  document.querySelectorAll('.tabbar__item').forEach(b=>{
+    b.classList.toggle('on',b.dataset.tab===S.tab);
+  });
+}
+
+function openDrawer(){$('drawer-wrap').classList.add('open')}
+function closeDrawer(){$('drawer-wrap').classList.remove('open')}
+function openSettings(){$('modal-wrap').classList.add('open')}
+function closeSettings(){$('modal-wrap').classList.remove('open')}
+
+/* ── Garden ── */
+function buildGarden(){
+  const g=$('garden-grid');g.innerHTML='';
+  DEMO_PLANTS.forEach(p=>{
+    const b=document.createElement('button');b.className='plant-card';b.type='button';
+    b.innerHTML=`<div class="plant-card__img"><img src="${p.photo}" alt="${p.nick}" loading="lazy"></div>
+      <div class="plant-card__row"><span class="plant-card__nick">${p.nick}</span><span class="plant-card__sp">${p.species}</span></div>
+      <div class="plant-card__meta">♥ 已陪伴${p.days}天</div>
+      <div class="plant-card__meta">↻ ${p.update}</div>`;
+    b.onclick=()=>openPlantCard(p);
+    g.appendChild(b);
+  });
+}
+
+function openPlantCard(p){
+  S.plant={...S.plant,name:p.nick,nick:p.nick,species:p.species,sourcePreview:p.photo,sticker:null,sourceBlob:null};
+  updatePlantUI();
+  if(p.photo)setImg($('plant-hero'),p.photo);
+  S.plantBackTo='garden';
+  showFlow('plant');
+}
+
+/* ── Journal ── */
+function buildFilters(){
+  const names=['全部',...DEMO_PLANTS.map(p=>p.nick)];
+  const box=$('j-filters');box.innerHTML='';
+  names.forEach(n=>{
+    const b=document.createElement('button');b.className='jfilt'+(n===S.journalFilter?' on':'');b.textContent=n;
+    b.onclick=()=>{S.journalFilter=n;buildFilters();buildRecords()};
+    box.appendChild(b);
+  });
+}
 
 function buildCal(){
   const now=new Date(),mo=now.getMonth(),yr=now.getFullYear(),today=now.getDate(),dim=new Date(yr,mo+1,0).getDate();
+  const start=(new Date(yr,mo,1).getDay()+6)%7;
   $('cal-date').textContent=`${MONTHS[mo]}.${today}`;
   const g=$('cal-grid');g.innerHTML='';
+  for(let i=0;i<start;i++){
+    const empty=document.createElement('div');
+    empty.className='cal__day is-empty';
+    g.appendChild(empty);
+  }
   for(let d=1;d<=dim;d++){
-    const c=document.createElement('div');c.className='cal__day'+(d===today?' is-today':'');
-    c.dataset.day=d;c.innerHTML=`<span class="cal__num">${d}</span>`;
-    if(S.stickers[d])attachSticker(c,S.stickers[d]);g.appendChild(c);
+    const c=document.createElement('div');
+    c.className='cal__day'+(d===today?' is-today':'');
+    c.dataset.day=d;
+    c.innerHTML=`<span class="cal__num">${d}</span>`;
+    if(S.stickers[d])attachSticker(c,S.stickers[d]);
+    g.appendChild(c);
   }
   $('cal-hint').textContent=Object.keys(S.stickers).length?'点击贴纸查看植物状态':'点击下方相机开始记录';
 }
 
 function attachSticker(cell,data){
   cell.classList.add('has-sticker');
-  const s=document.createElement('div');s.className='cal__sticker';s.style.setProperty('--rot',data.rot+'deg');
+  const s=document.createElement('div');
+  s.className='cal__sticker';
+  s.style.setProperty('--rot',data.rot+'deg');
   s.innerHTML=`<img src="${data.url}" alt="">`;
-  s.onclick=e=>{e.stopPropagation();goPlant(true)};
+  s.onclick=e=>{e.stopPropagation();goPlantFromJournal()};
   cell.appendChild(s);
-  cell.onclick=()=>goPlant(true);
+  cell.onclick=goPlantFromJournal;
 }
 
-function buildGal(){
-  const g=$('gal-grid');g.innerHTML='';
-  GAL_COLORS.forEach((cols,i)=>{
-    const b=document.createElement('button');b.className='gal__thumb';b.dataset.i=i;
-    const cv=document.createElement('canvas');cv.width=120;cv.height=120;const cx=cv.getContext('2d');
-    const gr=cx.createLinearGradient(0,0,120,120);gr.addColorStop(0,cols[0]);gr.addColorStop(1,cols[1]);cx.fillStyle=gr;cx.fillRect(0,0,120,120);
-    if(i===3){cx.fillStyle='rgba(61,107,82,.5)';cx.beginPath();cx.ellipse(60,70,30,45,0,0,Math.PI*2);cx.fill()}
-    const img=document.createElement('img');img.src=cv.toDataURL();b.appendChild(img);
-    b.innerHTML+=`<span class="gal__check"></span>`;b.onclick=()=>selectGal(i,b);g.appendChild(b);
+function buildRecords(){
+  const box=$('rec-list');box.innerHTML='';
+  const list=S.journalFilter==='全部'?S.records:S.records.filter(r=>r.name===S.journalFilter);
+  if(!list.length){
+    box.innerHTML='<div class="rec-empty">还没有记录<br>拍照后，成长变化会出现在这里</div>';
+    return;
+  }
+  list.forEach(r=>{
+    const el=document.createElement('div');el.className='rec-item';
+    el.innerHTML=`<div class="rec-item__thumb">${r.thumb?`<img src="${r.thumb}" alt="">`:''}</div>
+      <div class="rec-item__body">
+        <div class="rec-item__time">${r.time} · ${r.name}</div>
+        <div class="rec-item__text">${r.text}</div>
+        <div class="rec-item__tags">${r.tags.map(t=>`<span class="rec-tag">${t}</span>`).join('')}</div>
+      </div>`;
+    el.onclick=()=>goPlantFromJournal();
+    box.appendChild(el);
   });
 }
 
-function selectGal(i,el){
-  S.galSel=i;document.querySelectorAll('.gal__thumb').forEach(t=>t.classList.remove('selected'));
-  el.classList.add('selected');$('gal-preview').classList.add('on');$('gal-confirm').classList.add('on');
+function goPlantFromJournal(){
+  if(!S.plant.sticker&&Object.keys(S.stickers).length){
+    const today=new Date().getDate();
+    if(S.stickers[today])S.plant.sticker=S.stickers[today].url;
+    else{
+      const d=Math.max(...Object.keys(S.stickers).map(Number));
+      S.plant.sticker=S.stickers[d].url;
+    }
+  }
+  if(!S.plant.sticker){toast('请先拍摄植物');return}
+  updatePlantUI();
+  S.plantBackTo='journal';
+  showFlow('plant');
 }
 
-async function processUpload(file){
+function pickLocalImage(){
+  $('file-input').click();
+}
+
+/* ── Daily Check-in ── */
+function resetCheckinUI(){
+  if(S.checkin?.photoPreview)URL.revokeObjectURL(S.checkin.photoPreview);
+  S.checkin={watering:'yes',mood:'great',photoBlob:null,photoPreview:null};
+  document.querySelectorAll('#checkin-water .checkin__opt').forEach(b=>{
+    b.classList.toggle('on',b.dataset.w==='yes');
+  });
+  document.querySelectorAll('#checkin-mood .checkin__mood').forEach(b=>{
+    b.classList.toggle('on',b.dataset.m==='great');
+  });
+  const img=$('checkin-preview');
+  img.src='';img.classList.remove('show');
+  $('checkin-ph').style.display='';
+  $('checkin-photo-overlay').classList.remove('hide');
+}
+
+function openCheckin(opts={}){
+  S.checkinFrom=S.page;
+  S.checkinFirst=!!opts.first;
+  resetCheckinUI();
+  showFlow('checkin');
+}
+
+function setCheckinPhoto(file){
   if(!file||!file.type.startsWith('image/')){toast('请选择图片文件');return}
-  $('proc').classList.add('on');
+  if(S.checkin.photoPreview)URL.revokeObjectURL(S.checkin.photoPreview);
+  S.checkin.photoBlob=file;
+  S.checkin.photoPreview=URL.createObjectURL(file);
+  const img=$('checkin-preview');
+  img.src=S.checkin.photoPreview;
+  img.classList.add('show');
+  $('checkin-ph').style.display='none';
+  $('checkin-photo-overlay').classList.add('hide');
+}
+
+async function finishCheckin(){
+  if(!S.checkin.photoBlob){toast('请先拍一张照片');return}
+  if(S.plant.sticker&&S.checkin.photoBlob){
+    saveTodaySticker();
+    addRecordFromCheckin();
+    updatePlantUI();
+    showTab('journal');
+    buildCal();
+    buildRecords();
+    toast('今日记录已完成');
+    return;
+  }
+  S.plant.sourceBlob=S.checkin.photoBlob;
+  S.plant.sourcePreview=S.checkin.photoPreview;
+  showProc('正在识别植物轮廓…');
   try{
-    S.plant.sticker=await Cutout.fromFile(file);
-    $('inp-nick').value='';$('inp-loc').value='';
-    setImg($('prof-sticker'),S.plant.sticker);
-    showPage('profile');
+    const cutout=await Cutout.fromBlob(S.checkin.photoBlob,{
+      lineWidth:S.archiveStroke,
+      hooks:{onPreview(){showProc('正在添加白描边…')}}
+    });
+    S.plant.sticker=cutout;
+    hideProc();
+    if(S.checkinFirst||!S.plant.nick){
+      openMemberPage(cutout);
+    }else{
+      saveTodaySticker();
+      addRecordFromCheckin();
+      updatePlantUI();
+      showTab('journal');
+      buildCal();
+      buildRecords();
+      toast('今日记录已完成');
+    }
   }catch(e){
     console.warn('cutout failed',e);
-    toast('未能识别植物，请换一张背景简洁的照片');
-  }finally{
-    $('proc').classList.remove('on');
+    hideProc();
+    toast('抠图失败，请换一张背景更干净的照片');
   }
 }
 
-async function confirmGal(){
-  if(S.galSel===null)return;
-  $('proc').classList.add('on');
-  await new Promise(r=>setTimeout(r,900));
-  try{
-    const types=['monstera','pot','succulent','leaf','monstera'];
-    S.plant.sticker=await Cutout.preset(types[S.galSel%types.length]);
-  }catch{S.plant.sticker=await Cutout.preset('monstera')}
-  $('proc').classList.remove('on');
-  setImg($('prof-sticker'),S.plant.sticker);
-  showPage('profile');
+function addRecordFromCheckin(){
+  const wm={yes:'已浇水',no:'未浇水'};
+  const mm={great:'状态很棒',okay:'状态还行',bad:'状态不太好'};
+  const texts={
+    great:'今天长势很好，叶片精神，继续保持当前养护节奏。',
+    okay:'整体状态稳定，可留意光照与浇水频率。',
+    bad:'建议检查土壤湿度与光照，适当调整养护方式。'
+  };
+  const now=new Date();
+  S.records.unshift({
+    time:'今天 '+fmtTime(now),
+    name:S.plant.name||S.plant.nick||'我的植物',
+    text:texts[S.checkin.mood],
+    tags:[wm[S.checkin.watering],mm[S.checkin.mood]],
+    thumb:S.plant.sticker||S.plant.sourcePreview
+  });
+  $('st-records').textContent=S.records.length;
+  $('st-streak').textContent=S.records.length?Math.min(S.records.length,7):0;
+  buildRecords();
+  buildPlantTimeline();
 }
 
-function finishProfile(){
-  const nick=$('inp-nick').value.trim(),loc=$('inp-loc').value.trim();
-  if(nick)S.plant.nick=nick;
-  if(loc)S.plant.loc=loc;
-  S.plant.name=nick||'大龟背竹';
+/* ── Camera ── */
+function openCamera(opts={}){
+  S.cameraFirst=!!opts.first;
+  $('cam-found').textContent='已发现植物';
+  $('cam-tip-name').textContent='正在观察：琴叶榕';
+  $('cam-tip-desc').textContent='目前光照充足，建议在正午过后补水。';
+  $('cam-bg').classList.remove('has-img');
+  $('cam-bg').style.removeProperty('--cam-img');
+  showFlow('camera');
+}
+
+/* ── Cutout → P2 ── */
+function openMemberPage(cutoutUrl){
+  S.plant.nick='';
+  $('inp-nick').value='';
+  $('inp-days').value='';
+  $('member-date').textContent=formatJoinDate(new Date());
+  $('member-hero').innerHTML=`<img src="${cutoutUrl}" alt="" draggable="false">`;
+  showFlow('member');
+  requestAnimationFrame(()=>$('inp-nick').focus());
+}
+
+async function processFile(file){
+  if(!file||!file.type.startsWith('image/')){toast('请选择图片文件');return}
+  const url=URL.createObjectURL(file);
+  S.plant.sourceBlob=file;
+  S.plant.sourcePreview=url;
+  S.plant.sticker=null;
+  showProc('正在识别植物轮廓…');
+  try{
+    const cutout=await Cutout.fromBlob(file,{
+      lineWidth:S.archiveStroke,
+      hooks:{
+        onPreview(){showProc('正在添加白描边…')}
+      }
+    });
+    S.plant.sticker=cutout;
+    hideProc();
+    if(S.cameraFirst||!S.plant.nick){
+      S.cameraFirst=false;
+      openMemberPage(cutout);
+    }else{
+      setCheckinPhoto(file);
+      showFlow('checkin');
+    }
+  }catch(e){
+    console.warn('cutout failed',e);
+    hideProc();
+    toast('抠图失败，请换一张背景更干净的照片');
+  }
+}
+
+function finishMember(){
+  const nick=$('inp-nick').value.trim();
+  const days=$('inp-days').value.trim();
+  S.plant.name=S.plant.nick=nick||'新植物';
+  if(days)S.plant.days=days;
+  S.plant.species='琴叶榕';
+  saveTodaySticker();
+  addRecord();
+  updatePlantUI();
+  setImg($('plant-hero'),S.plant.sticker);
+  S.plantBackTo='journal';
+  showTab('journal');
+  buildCal();
+  buildRecords();
+  toast('成员档案已创建');
+}
+
+async function runCutoutOnPlant(){
+  if(S.plant.sticker){setImg($('plant-hero'),S.plant.sticker);saveTodaySticker();return}
+  if(!S.plant.sourceBlob)return;
+  $('plant-hero').classList.add('plant__hero--loading');
+  $('plant-hero').innerHTML=`<img src="${S.plant.sourcePreview||''}" alt=""><div class="plant__proc"><div class="proc__ring"></div><span>正在识别植物轮廓…</span></div>`;
+  try{
+    const sticker=await Cutout.fromBlob(S.plant.sourceBlob,{lineWidth:S.stroke,hooks:{
+      onPreview(url){$('plant-hero').innerHTML=`<img src="${url}" alt=""><div class="plant__proc"><div class="proc__ring"></div><span>正在添加白描边…</span></div>`}
+    }});
+    S.plant.sticker=sticker;
+    $('plant-hero').classList.remove('plant__hero--loading');
+    setImg($('plant-hero'),sticker);
+    saveTodaySticker();
+  }catch{
+    try{
+      const fb=await Cutout.preset('monstera',{lineWidth:S.stroke});
+      S.plant.sticker=fb;setImg($('plant-hero'),fb);saveTodaySticker();
+      toast('已切换为概括贴纸');
+    }catch{toast('抠图失败');}
+  }
+}
+
+function saveTodaySticker(){
   const today=new Date().getDate();
   S.stickers[today]={url:S.plant.sticker,rot:Math.random()*14-7};
-  if(!S._seeded){S._seeded=1;(async()=>{for(const d of S.demo){if(!S.stickers[d.day])S.stickers[d.day]={url:await Cutout.preset(d.type),rot:d.rot}}buildCal()})()}
-  buildCal();updatePlant();showPage('plant');$('plant-wrap').classList.add('has-back');
+  buildCal();
 }
 
-function updatePlant(){
+function addRecord(){
+  const now=new Date();
+  const wm={yes:'已浇水',no:'未浇水'};
+  const mm={great:'状态很棒',okay:'状态还行',bad:'状态不太好'};
+  const tags=['已记录'];
+  if(S.checkin?.watering)tags.push(wm[S.checkin.watering],mm[S.checkin.mood]);
+  S.records.unshift({
+    time:'今天 '+fmtTime(now),
+    name:S.plant.name,
+    text:'进行了日常记录，叶片状态良好，AI 已更新成长档案。',
+    tags,
+    thumb:S.plant.sticker||S.plant.sourcePreview
+  });
+  $('st-records').textContent=S.records.length;
+  $('st-streak').textContent=S.records.length?Math.min(S.records.length,7):0;
+  buildRecords();
+  buildPlantTimeline();
+}
+
+function updatePlantUI(){
   $('plant-name').textContent=S.plant.name;
-  setImg($('plant-hero'),S.plant.sticker||'');
-  if(S.plant.loc)$('txt-mood').textContent=`在${S.plant.loc}，叶片舒展`;
+  $('plant-act-name').textContent=S.plant.name;
+  $('plant-tags').innerHTML=`<span class="plant__tag">🌿 ${S.plant.species}</span><span class="plant__tag">📊 ${S.plant.days||'今天'}${S.plant.days?'':'加入'}</span>`;
+  if(S.plant.sticker)setImg($('plant-hero'),S.plant.sticker);
+  buildPlantTimeline();
 }
 
-function goPlant(fromCal){
-  if(!S.plant.sticker&&Object.keys(S.stickers).length){const d=Math.max(...Object.keys(S.stickers).map(Number));S.plant.sticker=S.stickers[d].url}
-  if(!S.plant.sticker){toast('请先拍摄植物');showPage('calendar');return}
-  updatePlant();
-  $('plant-wrap').classList.toggle('has-back',!!fromCal);
-  showPage('plant');
+function buildPlantTimeline(){
+  const box=$('plant-timeline');box.innerHTML='';
+  const items=S.records.filter(r=>r.name===S.plant.name).slice(0,3);
+  if(!items.length){
+    box.innerHTML='<p style="font-size:12px;color:var(--muted);text-align:center;padding:12px">暂无成长记录</p>';
+    return;
+  }
+  items.forEach(r=>{
+    const el=document.createElement('div');el.className='plant__tl-item';
+    el.innerHTML=`<div class="plant__tl-dot"></div><div class="plant__tl-card">
+      ${r.thumb?`<img src="${r.thumb}" alt="">`:''}<div><div class="plant__tl-time">${r.time}</div><p>${r.text}</p></div></div>`;
+    box.appendChild(el);
+  });
 }
 
-function renderChips(){
-  const box=$('chip-box');box.innerHTML='';
-  for(let i=0;i<2;i++){const q=QUESTIONS[(S.qIdx+i)%QUESTIONS.length];
-    const b=document.createElement('button');b.className='plant__chip';b.textContent=q[0];
-    b.onclick=()=>openSheet('植物医生',q[1]);box.appendChild(b)}
+function updateDrawer(){
+  $('drawer-sub').textContent=`正在陪伴 ${DEMO_PLANTS.length} 株植物成长`;
+  $('st-plants').textContent=DEMO_PLANTS.length;
+  $('st-records').textContent=S.records.length;
 }
 
-$('btn-camera').onclick=()=>$('file-input').click();
+/* ── Events ── */
+$('btn-start-photo').onclick=()=>openCamera({first:true});
+$('btn-record').onclick=()=>openCamera({first:false});
+$('btn-album').onclick=()=>openCamera({first:false});
+$('btn-cal-camera').onclick=()=>openCamera({first:false});
+$('btn-all-plants').onclick=()=>openSheet('我的植物',`共 ${DEMO_PLANTS.length} 株植物，点击卡片查看详情。`);
+$('btn-drawer').onclick=$('btn-drawer2').onclick=$('btn-drawer-garden').onclick=openDrawer;
+$('drawer-bg').onclick=closeDrawer;
+$('btn-settings').onclick=$('btn-settings2').onclick=$('btn-settings-garden').onclick=openSettings;
+$('modal-bg').onclick=closeSettings;
+$('modal-close').onclick=closeSettings;
+document.querySelectorAll('.modal__toggle').forEach(btn=>{
+  btn.onclick=()=>{btn.classList.toggle('on');S.settings[btn.dataset.key]=btn.classList.contains('on')};
+});
+document.querySelectorAll('.drawer__item,[data-sheet]').forEach(el=>{
+  el.onclick=()=>{closeDrawer();closeSettings();openSheet(el.dataset.sheet||'提示')};
+});
+$('btn-logout').onclick=()=>{closeDrawer();toast('已退出（演示）')};
+
+$('cam-close').onclick=()=>showPage(S.fromPage||'home');
+$('cam-shutter').onclick=pickLocalImage;
+$('cam-album').onclick=pickLocalImage;
+$('cam-flash').onclick=()=>{S.flashOn=!S.flashOn;$('cam-flash').classList.toggle('on',S.flashOn);toast(S.flashOn?'闪光灯已开启':'闪光灯已关闭')};
+$('cam-tip').onclick=()=>openSheet('AI 观察','目前光照充足，建议在正午过后补水。');
+$('cam-more').onclick=()=>openSheet('更多','网格线、定时拍摄等功能即将上线。');
+
+$('checkin-back').onclick=()=>showPage(S.checkinFrom||'home');
+$('checkin-photo').onclick=pickLocalImage;
+$('checkin-submit').onclick=finishCheckin;
+document.querySelectorAll('#checkin-water .checkin__opt').forEach(b=>{
+  b.onclick=()=>{
+    S.checkin.watering=b.dataset.w;
+    document.querySelectorAll('#checkin-water .checkin__opt').forEach(x=>x.classList.toggle('on',x===b));
+  };
+});
+document.querySelectorAll('#checkin-mood .checkin__mood').forEach(b=>{
+  b.onclick=()=>{
+    S.checkin.mood=b.dataset.m;
+    document.querySelectorAll('#checkin-mood .checkin__mood').forEach(x=>x.classList.toggle('on',x===b));
+  };
+});
+
+$('member-close').onclick=()=>showPage('home');
+$('member-create').onclick=finishMember;
+
+$('plant-back').onclick=()=>{
+  showTab(S.plantBackTo==='journal'?'journal':'garden');
+  if(S.plantBackTo==='journal'){buildCal();buildRecords()}
+};
+$('plant-more').onclick=()=>openSheet('更多操作','编辑档案、分享记录、删除植物等功能即将上线。');
+$('plant-fab').onclick=()=>openCamera({first:false});
+$('btn-all-rec').onclick=$('btn-tl-all').onclick=()=>openSheet('全部记录',`共 ${S.records.length} 条成长记录。`);
+document.querySelectorAll('.plant__act').forEach(b=>{
+  b.onclick=()=>{toast(`已记录：${b.dataset.act}`);addRecord()};
+});
+
 $('file-input').addEventListener('change',e=>{
   const f=e.target.files?.[0];
-  if(f)processUpload(f);
+  if(!f)return;
+  if(S.page==='checkin')setCheckinPhoto(f);
+  else processFile(f);
   e.target.value='';
 });
-$('gal-close').onclick=()=>showPage('calendar');
-$('gal-confirm').onclick=()=>{if(S.galSel!==null)confirmGal()};
-$('gal-preview').onclick=()=>{if(S.galSel!==null)openSheet('预览','已选择一张照片，确认后将自动抠图并生成植物贴纸。')};
-$('prof-skip').onclick=finishProfile;
-$('inp-nick').addEventListener('keydown',e=>{if(e.key==='Enter')finishProfile()});
-$('inp-loc').addEventListener('keydown',e=>{if(e.key==='Enter')finishProfile()});
-$('plant-back').onclick=()=>showPage('calendar');
-$('btn-refresh').onclick=()=>{S.qIdx=(S.qIdx+1)%QUESTIONS.length;renderChips();toast('已换一批问题')};
+
+document.querySelectorAll('.tabbar__item').forEach(b=>{
+  b.onclick=()=>showTab(b.dataset.tab);
+});
 $('overlay').onclick=e=>{if(e.target===$('overlay'))$('overlay').classList.remove('open')};
-document.querySelectorAll('[data-toast]').forEach(el=>el.onclick=()=>openSheet(el.dataset.toast,el.querySelector('p').textContent));
 
 function tick(){$('clock').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'numeric',minute:'2-digit',hour12:false})}
 
-(async function init(){
-  buildCal();buildGal();renderChips();tick();setInterval(tick,3e4);
+(function init(){
+  buildGarden();buildFilters();buildCal();buildRecords();updateDrawer();
+  $('tabbar').classList.add('hidden');
+  tick();setInterval(tick,3e4);
 })();
 </script>
 </body>

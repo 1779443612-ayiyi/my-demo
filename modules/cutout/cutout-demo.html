@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BiRefNet 抠图 + 白描边 Demo</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f4f4;--card:#fff;--text:#1a1a1a;--muted:#666;
+  --green:#1a3d2e;--red:#cf1322;--r:16px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  --mono:"SF Mono",Menlo,monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:28px 20px 48px}
+.wrap{max-width:880px;margin:0 auto}
+h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.sub{margin-top:6px;color:var(--muted);font-size:15px}
+.panel{background:var(--card);border-radius:var(--r);padding:18px;margin-top:20px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.panel h2{font-size:14px;font-weight:700;color:#444;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:160px}
+.field span{font-size:12px;color:var(--muted);font-weight:600}
+.field input,.field select{padding:10px 12px;border:1px solid #e0e0e0;border-radius:10px;font:inherit;font-size:14px;outline:none}
+.field input:focus,.field select:focus{border-color:var(--green)}
+.slider-row{display:flex;align-items:center;gap:10px}
+.slider-row input{flex:1}
+.slider-row strong{font-size:14px;min-width:36px}
+.btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.btn{border:none;border-radius:12px;padding:12px 20px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:transform .15s,opacity .15s}
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn--pri{background:var(--green);color:#fff}
+.btn--sec{background:#fff;border:1px solid #ddd;color:var(--green)}
+.status{display:none;align-items:center;gap:10px;padding:12px 14px;background:#f9f9f9;border-radius:10px;margin-top:14px;font-size:14px;color:#555}
+.status.on{display:flex}
+.spin{width:18px;height:18px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{display:none;margin-top:14px;padding:12px 14px;background:#fff1f0;border:1px solid #ffccc7;border-radius:10px;color:var(--red);font-size:14px;line-height:1.5}
+.err.on{display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.fig figcaption{font-size:13px;font-weight:600;margin-bottom:8px;color:#444}
+.fig em{font-style:normal;font-weight:400;color:#999}
+.box{aspect-ratio:1;border-radius:14px;border:1px solid #ebebeb;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background-color:#fafafa;
+  background-image:linear-gradient(45deg,#eee 25%,transparent 25%),linear-gradient(-45deg,#eee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#eee 75%),linear-gradient(-45deg,transparent 75%,#eee 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.box img{max-width:88%;max-height:88%;object-fit:contain;filter:drop-shadow(0 4px 14px rgba(0,0,0,.12))}
+.ph{font-size:14px;color:#bbb}
+.code{margin-top:18px;background:#1a1a1a;color:#e8e8e8;border-radius:12px;padding:16px;font-family:var(--mono);font-size:13px;line-height:1.65;white-space:pre-wrap}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:#edf3ee;color:var(--green);margin-left:6px}
+.hint{font-size:12px;color:#999;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>植物贴纸抠图 Demo</h1>
+  <p class="sub">BiRefNet / remove.bg 抠图 → Canvas 白描边 <span class="tag">可直接打开</span></p>
+
+  <div class="panel">
+    <h2>API 配置（可选，不填则用本地算法）</h2>
+    <div class="row">
+      <label class="field">
+        <span>HuggingFace Token (BiRefNet)</span>
+        <input id="hf-token" type="password" placeholder="hf_xxx" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>remove.bg API Key</span>
+        <input id="rmbg-key" type="password" placeholder="可选备选" autocomplete="off">
+      </label>
+      <label class="field" style="max-width:180px">
+        <span>引擎</span>
+        <select id="provider">
+          <option value="auto">自动</option>
+          <option value="birefnet">BiRefNet</option>
+          <option value="removebg">remove.bg</option>
+          <option value="local">本地算法</option>
+        </select>
+      </label>
+      <label class="field" style="max-width:160px">
+        <span>描边 lineWidth</span>
+        <div class="slider-row">
+          <input id="line-width" type="range" min="1" max="20" value="3">
+          <strong id="lw-val">3</strong>
+        </div>
+      </label>
+    </div>
+    <p class="hint">本地模式无需 API，可直接体验白描边效果。配置 Token 后自动调用 BiRefNet，失败时回退 remove.bg。</p>
+    <div class="btns">
+      <button class="btn btn--pri" id="btn-pick">选择图片</button>
+      <button class="btn btn--sec" id="btn-demo">使用示例植物</button>
+      <button class="btn btn--sec" id="btn-dl" disabled>下载贴纸</button>
+    </div>
+    <input type="file" id="file" accept="image/*" hidden>
+    <div class="status" id="status"><div class="spin"></div><span id="status-txt">处理中…</span></div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div class="grid">
+    <figure class="fig">
+      <figcaption>原图</figcaption>
+      <div class="box" id="box-orig"><span class="ph">等待上传</span></div>
+    </figure>
+    <figure class="fig">
+      <figcaption>抠图 + 白描边 <em id="engine-tag"></em></figcaption>
+      <div class="box" id="box-out"><span class="ph">等待处理</span></div>
+    </figure>
+  </div>
+
+  <div class="code" id="code-block">ctx.strokeStyle = "white";
+ctx.lineWidth = 3;
+ctx.lineJoin = "round";
+ctx.lineCap = "round";
+ctx.stroke(contourPath);
+ctx.drawImage(cutoutImage, 0, 0);</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const HF_MODEL = 'ZhengPeng7/BiRefNet';
+const HF_API = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
+
+function loadImg(src) {
+  return new Promise((ok, no) => {
+    const i = new Image();
+    i.crossOrigin = 'anonymous';
+    i.onload = () => ok(i);
+    i.onerror = () => no(new Error('图片加载失败'));
+    i.src = src;
+  });
+}
+
+function blobToUrl(blob) {
+  return new Promise((ok, no) => {
+    const r = new FileReader();
+    r.onload = () => ok(r.result);
+    r.onerror = () => no(new Error('读取失败'));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function resizeBlob(blob, max = 1024) {
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await loadImg(url);
+    const sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * sc));
+    const h = Math.max(1, Math.round(img.naturalHeight * sc));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    return await new Promise((ok, no) => c.toBlob(b => b ? ok(b) : no(new Error('压缩失败')), 'image/jpeg', 0.92));
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* ── 轮廓描边 ── */
+function buildContourPath(imageData) {
+  const { width, height, data } = imageData;
+  const path = new Path2D();
+  const opaque = (x, y) => x >= 0 && y >= 0 && x < width && y < height && data[(y * width + x) * 4 + 3] > 128;
+  const edge = (x, y) => opaque(x, y) && (!opaque(x-1,y) || !opaque(x+1,y) || !opaque(x,y-1) || !opaque(x,y+1));
+  let sx = -1, sy = -1;
+  outer: for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (edge(x,y)) { sx=x; sy=y; break outer; }
+  if (sx < 0) return path;
+  const dirs = [[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]];
+  let x = sx, y = sy, dir = 0;
+  path.moveTo(x, y);
+  let steps = 0;
+  do {
+    let found = false;
+    for (let i = 0; i < 8; i++) {
+      const d = (dir + i + 5) % 8;
+      const nx = x + dirs[d][0], ny = y + dirs[d][1];
+      if (edge(nx, ny)) { x = nx; y = ny; dir = d; path.lineTo(x, y); found = true; break; }
+    }
+    if (!found) break;
+    steps++;
+  } while ((x !== sx || y !== sy) && steps < width * height * 4);
+  path.closePath();
+  return path;
+}
+
+function addWhiteStroke(source, lineWidth = 3) {
+  const w = source.naturalWidth, h = source.naturalHeight;
+  const pad = lineWidth + 4;
+  const tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  const tctx = tmp.getContext('2d');
+  tctx.drawImage(source, 0, 0);
+  const contour = buildContourPath(tctx.getImageData(0, 0, w, h));
+  const c = document.createElement('canvas');
+  c.width = w + pad * 2; c.height = h + pad * 2;
+  const ctx = c.getContext('2d');
+  ctx.save();
+  ctx.translate(pad, pad);
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = lineWidth;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke(contour);
+  ctx.drawImage(source, 0, 0);
+  ctx.restore();
+  return c.toDataURL('image/png');
+}
+
+/* ── 本地抠图（无 API 时可用） ── */
+const LocalCutout = {
+  MAX: 800,
+  sampleBg(d, w, h) {
+    const pts = [];
+    for (let x = 0; x < w; x++) { pts.push([x,0],[x,h-1]); }
+    for (let y = 1; y < h-1; y++) { pts.push([0,y],[w-1,y]); }
+    let r=0,g=0,b=0,n=0;
+    pts.forEach(([x,y]) => { const k=(y*w+x)*4; if(d[k+3]<30)return; r+=d[k];g+=d[k+1];b+=d[k+2];n++; });
+    return n ? {r:r/n,g:g/n,b:b/n} : {r:255,g:255,b:255};
+  },
+  isBg(r,g,b,a,bg) {
+    if (a < 18) return true;
+    const lum = .299*r+.587*g+.114*b;
+    const dist = Math.hypot(r-bg.r,g-bg.g,b-bg.b);
+    const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+    const sat = mx ? (mx-mn)/mx : 0;
+    const shadow = lum < 85 && sat < .22 && dist < 96;
+    return dist < 64 || lum > 246 || (lum > 205 && sat < .16) || shadow;
+  },
+  buildMask(d, w, h) {
+    const mask = new Uint8Array(w*h);
+    let tr = 0;
+    for (let i = 0; i < w*h; i++) if (d[i*4+3] < 20) tr++;
+    const useAlpha = tr/(w*h) > .04;
+    if (useAlpha) {
+      for (let i = 0; i < w*h; i++) mask[i] = d[i*4+3] > 18 ? 1 : 0;
+    } else {
+      const bg = this.sampleBg(d,w,h);
+      for (let i = 0; i < w*h; i++) {
+        const k = i*4;
+        mask[i] = this.isBg(d[k],d[k+1],d[k+2],d[k+3],bg) ? 0 : 1;
+      }
+    }
+    return mask;
+  },
+  keepLargest(mask, w, h) {
+    const vis = new Uint8Array(w*h), lbl = new Int32Array(w*h).fill(-1);
+    let best = 0, bestId = -1, id = 0;
+    const flood = (sx,sy,tag) => {
+      const st=[[sx,sy]]; let n=0;
+      while(st.length) {
+        const [x,y]=st.pop(), i=y*w+x;
+        if(x<0||y<0||x>=w||y>=h||vis[i]||!mask[i])continue;
+        vis[i]=1; lbl[i]=tag; n++;
+        st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+      }
+      return n;
+    };
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
+      const i=y*w+x;
+      if(!vis[i]&&mask[i]){const n=flood(x,y,id);if(n>best){best=n;bestId=id}id++}
+    }
+    if (best < 16) return mask;
+    const out = new Uint8Array(w*h);
+    for (let i=0;i<w*h;i++) out[i] = lbl[i]===bestId?1:0;
+    return out;
+  },
+  dilate(mask,w,h,r){
+    const out=new Uint8Array(w*h),r2=r*r;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;
+      if(mask[i]){out[i]=1;continue}
+      let hit=false;
+      for(let dy=-r;dy<=r&&!hit;dy++)for(let dx=-r;dx<=r&&!hit;dx++){
+        if(dx*dx+dy*dy>r2)continue;
+        const nx=x+dx,ny=y+dy;
+        if(nx>=0&&ny>=0&&nx<w&&ny<h&&mask[ny*w+nx])hit=true;
+      }
+      out[i]=hit?1:0;
+    }
+    return out;
+  },
+  erode(mask,w,h,r){
+    const out=new Uint8Array(w*h),r2=r*r;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;
+      if(!mask[i]){out[i]=0;continue}
+      let keep=true;
+      for(let dy=-r;dy<=r&&keep;dy++)for(let dx=-r;dx<=r&&keep;dx++){
+        if(dx*dx+dy*dy>r2)continue;
+        const nx=x+dx,ny=y+dy;
+        if(nx<0||ny<0||nx>=w||ny>=h||!mask[ny*w+nx])keep=false;
+      }
+      out[i]=keep?1:0;
+    }
+    return out;
+  },
+  toCutoutImageData(mask, d, w, h) {
+    const out = new ImageData(w, h);
+    for (let i=0;i<w*h;i++) {
+      const o=i*4;
+      if(mask[i]){out.data[o]=d[o];out.data[o+1]=d[o+1];out.data[o+2]=d[o+2];out.data[o+3]=255}
+    }
+    return out;
+  },
+  async fromBlob(blob) {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await loadImg(url);
+      const sc = Math.min(1, this.MAX/Math.max(img.naturalWidth,img.naturalHeight));
+      const w = Math.max(1,Math.round(img.naturalWidth*sc));
+      const h = Math.max(1,Math.round(img.naturalHeight*sc));
+      const c = document.createElement('canvas');
+      c.width=w; c.height=h;
+      const ctx = c.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(img,0,0,w,h);
+      const id = ctx.getImageData(0,0,w,h);
+      let mask = this.buildMask(id.data,w,h);
+      mask = this.dilate(mask,w,h,1);
+      mask = this.erode(mask,w,h,2);
+      mask = this.dilate(mask,w,h,1);
+      mask = this.keepLargest(mask,w,h);
+      const cut = this.toCutoutImageData(mask,id.data,w,h);
+      ctx.clearRect(0,0,w,h);
+      ctx.putImageData(cut,0,0);
+      return loadImg(c.toDataURL('image/png'));
+    } finally { URL.revokeObjectURL(url); }
+  }
+};
+
+/* ── API 抠图 ── */
+async function hfCutout(blob, token) {
+  const res = await fetch(HF_API, {
+    method:'POST',
+    headers:{Authorization:`Bearer ${token}`,'Content-Type':blob.type||'image/jpeg'},
+    body:blob
+  });
+  if (!res.ok) throw new Error(`BiRefNet ${res.status}: ${(await res.text()).slice(0,120)}`);
+  return res.blob();
+}
+
+async function removeBgCutout(blob, key) {
+  const fd = new FormData();
+  fd.append('image_file', blob, 'photo.jpg');
+  fd.append('size','auto');
+  fd.append('format','png');
+  const res = await fetch('https://api.remove.bg/v1.0/removebg', {
+    method:'POST', headers:{'X-Api-Key':key}, body:fd
+  });
+  if (!res.ok) throw new Error(`remove.bg ${res.status}: ${(await res.text()).slice(0,120)}`);
+  return res.blob();
+}
+
+async function applyMask(originalBlob, maskBlob) {
+  const [origUrl, maskUrl] = await Promise.all([blobToUrl(originalBlob), blobToUrl(maskBlob)]);
+  const [orig, mask] = await Promise.all([loadImg(origUrl), loadImg(maskUrl)]);
+  const c = document.createElement('canvas');
+  c.width = orig.naturalWidth; c.height = orig.naturalHeight;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(orig,0,0);
+  const img = ctx.getImageData(0,0,c.width,c.height);
+  const mc = document.createElement('canvas');
+  mc.width=c.width; mc.height=c.height;
+  mc.getContext('2d').drawImage(mask,0,0,c.width,c.height);
+  const md = mc.getContext('2d').getImageData(0,0,c.width,c.height);
+  for (let i=0;i<img.data.length;i+=4) img.data[i+3]=md.data[i];
+  ctx.putImageData(img,0,0);
+  return loadImg(c.toDataURL('image/png'));
+}
+
+async function apiCutout(blob, provider, hfToken, rmbgKey) {
+  if (provider === 'local') return { img: await LocalCutout.fromBlob(blob), engine: '本地算法' };
+  const tryBirefnet = (provider === 'birefnet' || provider === 'auto') && hfToken;
+  const tryRmbg = (provider === 'removebg' || provider === 'auto') && rmbgKey;
+
+  if (tryBirefnet) {
+    try {
+      const mask = await hfCutout(blob, hfToken);
+      const img = await applyMask(blob, mask);
+      return { img, engine: 'BiRefNet' };
+    } catch(e) {
+      if (!tryRmbg) throw e;
+      console.warn('BiRefNet fail, fallback remove.bg', e);
+    }
+  }
+  if (tryRmbg) {
+    const png = await removeBgCutout(blob, rmbgKey);
+    const img = await loadImg(await blobToUrl(png));
+    return { img, engine: 'remove.bg' };
+  }
+  return { img: await LocalCutout.fromBlob(blob), engine: '本地算法' };
+}
+
+/* ── 示例植物图 ── */
+function drawDemoPlant() {
+  const c = document.createElement('canvas');
+  c.width = 400; c.height = 480;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#e8e8e8';
+  ctx.fillRect(0,0,400,480);
+  ctx.fillStyle = '#c67b4e';
+  ctx.beginPath();
+  ctx.moveTo(120,360);ctx.lineTo(280,360);ctx.lineTo(265,420);ctx.lineTo(135,420);ctx.fill();
+  ctx.fillStyle = '#3d6b52';
+  const cx=200,cy=220;
+  ctx.beginPath();
+  ctx.moveTo(cx,cy-90);
+  ctx.bezierCurveTo(cx-80,cy-30,cx-75,cy+60,cx,cy+85);
+  ctx.bezierCurveTo(cx+75,cy+60,cx+80,cy-30,cx,cy-90);
+  ctx.fill();
+  ctx.fillStyle='rgba(30,50,38,.25)';
+  [[-20,-15],[15,5],[-5,35]].forEach(([fx,fy])=>{
+    ctx.beginPath();ctx.ellipse(cx+fx,cy+fy,12,22,0,0,Math.PI*2);ctx.fill();
+  });
+  return c;
+}
+
+/* ── UI ── */
+let resultUrl = null;
+
+function setBox(id, url) {
+  const box = $(id);
+  box.innerHTML = url ? `<img src="${url}" alt="">` : '<span class="ph">等待处理</span>';
+}
+
+function showErr(msg) { $('err').textContent = msg; $('err').classList.add('on'); }
+function hideErr() { $('err').classList.remove('on'); }
+function setLoading(on, txt='处理中…') {
+  $('status').classList.toggle('on', on);
+  $('status-txt').textContent = txt;
+  $('btn-pick').disabled = on;
+  $('btn-demo').disabled = on;
+}
+
+function updateCode(lw) {
+  $('code-block').textContent = `ctx.strokeStyle = "white";\nctx.lineWidth = ${lw};\nctx.lineJoin = "round";\nctx.lineCap = "round";\nctx.stroke(contourPath);\nctx.drawImage(cutoutImage, 0, 0);`;
+  $('lw-val').textContent = lw;
+}
+
+async function processInput(blob, previewUrl) {
+  hideErr();
+  setLoading(true, '抠图中…');
+  setBox('box-out', null);
+  $('engine-tag').textContent = '';
+  $('btn-dl').disabled = true;
+  resultUrl = null;
+
+  if (previewUrl) setBox('box-orig', previewUrl);
+  else setBox('box-orig', await blobToUrl(blob));
+
+  try {
+    const resized = await resizeBlob(blob);
+    const provider = $('provider').value;
+    const hfToken = $('hf-token').value.trim();
+    const rmbgKey = $('rmbg-key').value.trim();
+    const lw = +$('line-width').value;
+
+    setLoading(true, '添加白色描边…');
+    const { img, engine } = await apiCutout(resized, provider, hfToken, rmbgKey);
+    resultUrl = addWhiteStroke(img, lw);
+    setBox('box-out', resultUrl);
+    $('engine-tag').textContent = `· ${engine}`;
+    $('btn-dl').disabled = false;
+  } catch(e) {
+    showErr(e.message || '处理失败');
+  } finally {
+    setLoading(false);
+  }
+}
+
+$('line-width').addEventListener('input', e => updateCode(+e.target.value));
+
+$('btn-pick').addEventListener('click', () => $('file').click());
+$('file').addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  await processInput(f, URL.createObjectURL(f));
+  e.target.value = '';
+});
+
+$('btn-demo').addEventListener('click', async () => {
+  const c = drawDemoPlant();
+  const blob = await new Promise(ok => c.toBlob(ok, 'image/png'));
+  await processInput(blob, c.toDataURL('image/png'));
+});
+
+$('btn-dl').addEventListener('click', () => {
+  if (!resultUrl) return;
+  const a = document.createElement('a');
+  a.href = resultUrl;
+  a.download = 'plant-sticker.png';
+  a.click();
+});
+
+updateCode(3);
+</script>
+</body>
+</html>
