@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>从内容检索到经验决策 — 小红书搜索多模态体验升级研究</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --xhs-red: #FF2442;
+      --xhs-red-soft: #FF6B7A;
+      --xhs-red-bg: #FFF0F2;
+      --ink: #1A1A1A;
+      --ink-2: #4A4A4A;
+      --ink-3: #8A8A8A;
+      --line: #E8E8E8;
+      --bg: #FAFAFA;
+      --surface: #FFFFFF;
+      --blue: #3B82F6;
+      --blue-bg: #EFF6FF;
+      --green: #10B981;
+      --green-bg: #ECFDF5;
+      --amber: #F59E0B;
+      --amber-bg: #FFFBEB;
+      --purple: #8B5CF6;
+      --purple-bg: #F5F3FF;
+      --slide-w: 1280px;
+      --slide-h: 720px;
+      --font: 'Noto Sans SC', -apple-system, 'PingFang SC', sans-serif;
+      --font-serif: 'Noto Serif SC', Georgia, serif;
+    }
+    html, body { height: 100%; overflow: hidden; background: #111; font-family: var(--font); }
+    #deck { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; }
+    .slide {
+      width: var(--slide-w); height: var(--slide-h); background: var(--surface);
+      border-radius: 4px; box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      padding: 56px 72px; position: absolute; opacity: 0; pointer-events: none;
+      transform: translateX(40px) scale(.98); transition: opacity .45s, transform .45s;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .slide.active { opacity: 1; pointer-events: auto; transform: translateX(0) scale(1); z-index: 2; }
+    .slide.prev { opacity: 0; transform: translateX(-40px) scale(.98); }
+    .slide-num { position: absolute; bottom: 28px; right: 40px; font-size: 11px; color: var(--ink-3); letter-spacing: .08em; }
+    .section-tag { font-size: 11px; font-weight: 600; letter-spacing: .14em; color: var(--xhs-red); text-transform: uppercase; margin-bottom: 12px; }
+    h1 { font-family: var(--font-serif); font-size: 42px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+    h2 { font-family: var(--font-serif); font-size: 32px; font-weight: 600; line-height: 1.3; color: var(--ink); margin-bottom: 8px; }
+    h3 { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+    .subtitle { font-size: 16px; color: var(--ink-2); margin-top: 16px; line-height: 1.6; }
+    .lead { font-size: 14px; color: var(--ink-2); line-height: 1.7; }
+    .flex { display: flex; gap: 24px; }
+    .flex-1 { flex: 1; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .card { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; }
+    .card-red { background: var(--xhs-red-bg); border-color: #FFD6DC; }
+    .card-blue { background: var(--blue-bg); border-color: #BFDBFE; }
+    .card-green { background: var(--green-bg); border-color: #A7F3D0; }
+    .card-amber { background: var(--amber-bg); border-color: #FDE68A; }
+    .card-purple { background: var(--purple-bg); border-color: #DDD6FE; }
+    .tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; background: var(--bg); color: var(--ink-2); border: 1px solid var(--line); }
+    .tag-red { background: var(--xhs-red-bg); color: var(--xhs-red); border-color: #FFD6DC; }
+    ul.clean { list-style: none; }
+    ul.clean li { font-size: 13px; color: var(--ink-2); line-height: 1.8; padding-left: 16px; position: relative; }
+    ul.clean li::before { content: ''; position: absolute; left: 0; top: 10px; width: 5px; height: 5px; border-radius: 50%; background: var(--xhs-red); }
+    .arrow-down { text-align: center; color: var(--ink-3); font-size: 18px; line-height: 1.4; margin: 4px 0; }
+    .flow-box { background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 16px; text-align: center; font-size: 13px; font-weight: 500; color: var(--ink); }
+    .flow-box.highlight { border-color: var(--xhs-red); background: var(--xhs-red-bg); color: var(--xhs-red); }
+    .flow-box.blue { border-color: var(--blue); background: var(--blue-bg); color: #1D4ED8; }
+    .flow-box.green { border-color: var(--green); background: var(--green-bg); color: #047857; }
+    .vs-badge { background: var(--ink); color: #fff; font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 20px; align-self: center; }
+    .pain { color: #DC2626; font-size: 12px; }
+    .opp { color: #059669; font-size: 12px; }
+    .nav-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; z-index: 100; background: rgba(26,26,26,.85); backdrop-filter: blur(12px); padding: 10px 20px; border-radius: 40px; }
+    .nav-btn { width: 36px; height: 36px; border: none; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+    .nav-btn:hover { background: rgba(255,255,255,.22); }
+    .nav-dots { display: flex; gap: 6px; max-width: 320px; flex-wrap: wrap; justify-content: center; }
+    .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.25); cursor: pointer; transition: all .2s; border: none; padding: 0; }
+    .nav-dot.active { background: var(--xhs-red); width: 18px; border-radius: 3px; }
+    .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--xhs-red); transition: width .4s; z-index: 100; }
+    .kbd-hint { position: fixed; top: 20px; right: 24px; font-size: 11px; color: rgba(255,255,255,.35); z-index: 100; }
+    /* Cover */
+    .slide-cover { background: linear-gradient(135deg, #1A1A1A 0%, #2D1518 50%, #1A1A1A 100%); color: #fff; justify-content: center; padding: 72px 96px; }
+    .slide-cover .section-tag { color: var(--xhs-red-soft); }
+    .slide-cover h1 { color: #fff; font-size: 48px; max-width: 900px; }
+    .slide-cover .subtitle { color: rgba(255,255,255,.65); font-size: 18px; max-width: 700px; }
+    .cover-meta { margin-top: 48px; display: flex; gap: 32px; }
+    .cover-meta span { font-size: 12px; color: rgba(255,255,255,.4); letter-spacing: .06em; }
+    .cover-accent { position: absolute; right: -80px; top: -80px; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(255,36,66,.25) 0%, transparent 70%); }
+    .cover-line { width: 48px; height: 3px; background: var(--xhs-red); margin: 24px 0; }
+    /* Timeline */
+    .timeline { display: flex; align-items: flex-start; gap: 0; margin-top: 24px; }
+    .tl-item { flex: 1; position: relative; padding: 0 12px; }
+    .tl-item::after { content: ''; position: absolute; top: 28px; left: 50%; width: 100%; height: 2px; background: var(--line); z-index: 0; }
+    .tl-item:last-child::after { display: none; }
+    .tl-dot { width: 56px; height: 56px; border-radius: 50%; background: var(--bg); border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 12px; position: relative; z-index: 1; }
+    .tl-item.active .tl-dot { border-color: var(--xhs-red); background: var(--xhs-red-bg); }
+    .tl-label { font-size: 12px; font-weight: 600; text-align: center; color: var(--ink); margin-bottom: 4px; }
+    .tl-desc { font-size: 11px; text-align: center; color: var(--ink-3); line-height: 1.5; }
+    /* Swimlane */
+    .swimlane { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+    .swim-header { padding: 10px 20px; font-size: 13px; font-weight: 600; }
+    .swim-before .swim-header { background: #F3F4F6; color: var(--ink-2); }
+    .swim-after .swim-header { background: var(--xhs-red-bg); color: var(--xhs-red); }
+    .swim-body { padding: 16px 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--surface); }
+    .swim-step { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; font-size: 12px; color: var(--ink); }
+    .swim-after .swim-step { background: #fff; border-color: #FFD6DC; }
+    .swim-arrow { color: var(--ink-3); font-size: 14px; }
+    /* Search box mock */
+    .search-mock { border: 1.5px solid var(--line); border-radius: 24px; padding: 12px 20px; display: flex; align-items: center; gap: 10px; background: var(--bg); }
+    .search-mock.new { border-color: var(--xhs-red); background: #fff; box-shadow: 0 4px 20px rgba(255,36,66,.1); }
+    .search-mock .icon { font-size: 16px; opacity: .5; }
+    .search-mock .placeholder { font-size: 13px; color: var(--ink-3); }
+    .search-mock .chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .chip { font-size: 11px; padding: 4px 10px; border-radius: 14px; background: var(--xhs-red-bg); color: var(--xhs-red); border: 1px solid #FFD6DC; }
+    /* IA layers */
+    .ia-layer { border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; }
+    .ia-layer .layer-tag { font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 4px 8px; border-radius: 4px; min-width: 110px; text-align: center; }
+    .ia-answer { background: var(--xhs-red-bg); border: 1px solid #FFD6DC; }
+    .ia-answer .layer-tag { background: var(--xhs-red); color: #fff; }
+    .ia-evidence { background: var(--blue-bg); border: 1px solid #BFDBFE; }
+    .ia-evidence .layer-tag { background: var(--blue); color: #fff; }
+    .ia-explore { background: var(--green-bg); border: 1px solid #A7F3D0; }
+    .ia-explore .layer-tag { background: var(--green); color: #fff; }
+    .ia-layer .layer-content { font-size: 13px; color: var(--ink-2); }
+    /* Pentagon */
+    .pentagon-wrap { display: flex; align-items: center; justify-content: center; gap: 40px; flex: 1; }
+    .pentagon-svg { flex-shrink: 0; }
+    .strategy-list .strategy-item { margin-bottom: 14px; }
+    .strategy-list .strategy-item h3 { font-size: 14px; color: var(--xhs-red); }
+    .strategy-list .strategy-item p { font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+    /* Conversation */
+    .conv-bubble { max-width: 280px; padding: 10px 14px; border-radius: 14px; font-size: 12px; line-height: 1.5; margin-bottom: 8px; }
+    .conv-user { background: var(--xhs-red); color: #fff; border-radius: 14px 14px 4px 14px; margin-left: auto; }
+    .conv-ai { background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 14px 14px 14px 4px; }
+    /* Credibility */
+    .cred-bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin: 8px 0; }
+    .cred-fill { height: 100%; border-radius: 4px; }
+    .cred-high { background: linear-gradient(90deg, #10B981, #34D399); width: 85%; }
+    .cred-mid { background: linear-gradient(90deg, #F59E0B, #FBBF24); width: 55%; }
+    .cred-low { background: linear-gradient(90deg, #EF4444, #F87171); width: 30%; }
+    /* Evolution pyramid */
+    .evo-pyramid { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 16px; }
+    .evo-step { text-align: center; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: 600; color: #fff; transition: width .3s; }
+    .evo-1 { background: #9CA3AF; width: 280px; }
+    .evo-2 { background: #6B7280; width: 340px; }
+    .evo-3 { background: var(--xhs-red-soft); width: 400px; }
+    .evo-4 { background: var(--xhs-red); width: 460px; }
+    .evo-arrow { color: var(--ink-3); font-size: 16px; }
+    .content-grow { flex: 1; display: flex; flex-direction: column; }
+    .mt-auto { margin-top: auto; }
+    @media (max-width: 1320px) {
+      .slide { transform: scale(.85); }
+      .slide.active { transform: scale(.85); }
+    }
+    @media print {
+      html, body { overflow: visible; background: #fff; }
+      #deck { display: block; height: auto; }
+      .slide { position: relative; opacity: 1 !important; transform: none !important; page-break-after: always; box-shadow: none; margin: 0 auto 20px; }
+      .nav-bar, .progress-bar, .kbd-hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div class="kbd-hint">← → 切换页面 · F 全屏</div>
+  <div id="deck">
+
+    <!-- P1 封面 -->
+    <section class="slide slide-cover active">
+      <div class="cover-accent"></div>
+      <div class="section-tag">UX RESEARCH PORTFOLIO · 2025–2026</div>
+      <div class="cover-line"></div>
+      <h1>从内容检索到经验决策：<br>小红书搜索多模态体验升级研究</h1>
+      <p class="subtitle">基于小红书搜索体验演进的设计策略拆解（2025–2026）</p>
+      <div class="cover-meta">
+        <span>体验策略研究</span>
+        <span>多模态 AI 设计</span>
+        <span>秋招作品集</span>
+      </div>
+      <span class="slide-num" style="color:rgba(255,255,255,.3)">01 / 22</span>
+    </section>
+
+    <!-- P2 项目背景 -->
+    <section class="slide">
+      <div class="section-tag">01 · 项目背景</div>
+      <h2>为什么研究小红书搜索？</h2>
+      <p class="lead" style="margin-bottom:20px">搜索范式正在经历第三次跃迁——从信息获取，到经验获取，再到决策辅助。</p>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot">🔍</div>
+          <div class="tl-label">传统搜索</div>
+          <div class="tl-desc">Google / Baidu<br>关键词匹配 → 信息获取</div>
+        </div>
+        <div class="tl-item active">
+          <div class="tl-dot">📖</div>
+          <div class="tl-label">内容社区搜索</div>
+          <div class="tl-desc">小红书 / 知乎<br>经验获取 → 消费决策</div>
+        </div>
+        <div class="tl-item active">
+          <div class="tl-dot">✨</div>
+          <div class="tl-label">AI 时代</div>
+          <div class="tl-desc">用户不再满足于「找到内容」<br>而是希望「直接得到可信答案」</div>
+        </div>
+      </div>
+      <div class="card card-red mt-auto" style="margin-top:28px">
+        <h3 style="color:var(--xhs-red)">核心问题</h3>
+        <p class="lead" style="margin-top:8px;font-size:15px;color:var(--ink)">小红书如何从「搜索笔记」升级为「搜索经验」？</p>
+        <p class="lead" style="margin-top:8px;font-size:12px">当 AI 能够总结、推理、多模态理解时，搜索体验的底层逻辑需要被重新定义。</p>
+      </div>
+      <span class="slide-num">02 / 22</span>
+    </section>
+
+    <!-- P3 研究目标 -->
+    <section class="slide">
+      <div class="section-tag">02 · 研究目标</div>
+      <h2>Research Question</h2>
+      <div class="grid-3" style="margin-top:28px">
+        <div class="card">
+          <div class="tag tag-red" style="margin-bottom:12px">Q1</div>
+          <h3>搜索入口发生了什么变化？</h3>
+          <p class="lead" style="margin-top:8px">从关键词输入框到对话式入口，表达门槛如何被降低？</p>
+        </div>
+        <div class="card">
+          <div class="tag tag-red" style="margin-bottom:12px">Q2</div>
+          <h3>结果页为什么要重构？</h3>
+          <p class="lead" style="margin-top:8px">信息架构如何从 Feed 流进化为分层决策结构？</p>
+        </div>
+        <div class="card">
+          <div class="tag tag-red" style="margin-bottom:12px">Q3</div>
+          <h3>多模态与 AI 如何改变决策路径？</h3>
+          <p class="lead" style="margin-top:8px">文字、图片、语音、视频如何统一为经验检索？</p>
+        </div>
+      </div>
+      <div class="flex mt-auto" style="margin-top:32px;gap:20px">
+        <div class="card card-blue flex-1">
+          <h3>体验策略总结</h3>
+          <p class="lead" style="margin-top:6px">提炼 Answer First、Trust by Evidence 等可迁移的设计策略</p>
+        </div>
+        <div class="card card-green flex-1">
+          <h3>设计方法沉淀</h3>
+          <p class="lead" style="margin-top:6px">建立从行业观察到体验拆解再到策略升华的研究框架</p>
+        </div>
+      </div>
+      <span class="slide-num">03 / 22</span>
+    </section>
+
+    <!-- P4 用户需求 Before -->
+    <section class="slide">
+      <div class="section-tag">03 · 用户需求变化</div>
+      <h2>用户旅程对比：Before</h2>
+      <div class="flex" style="margin-top:20px;gap:32px">
+        <div class="flex-1">
+          <div class="card" style="margin-bottom:16px">
+            <div class="tag" style="margin-bottom:10px">搜索目标</div>
+            <p style="font-size:18px;font-weight:600;color:var(--ink)">获取信息</p>
+          </div>
+          <div class="swimlane swim-before">
+            <div class="swim-header">用户旅程 · Before</div>
+            <div class="swim-body">
+              <span class="swim-step">输入关键词</span><span class="swim-arrow">→</span>
+              <span class="swim-step">浏览大量笔记</span><span class="swim-arrow">→</span>
+              <span class="swim-step">筛选广告</span><span class="swim-arrow">→</span>
+              <span class="swim-step">自行总结</span><span class="swim-arrow">→</span>
+              <span class="swim-step">做决策</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="card card-red">
+            <h3 style="color:#DC2626">Pain Points</h3>
+            <ul class="clean" style="margin-top:12px">
+              <li class="pain" style="color:var(--ink-2)"><strong style="color:#DC2626">信息过载</strong> — 笔记数量庞大，有效信息淹没在海量内容中</li>
+              <li class="pain" style="color:var(--ink-2)"><strong style="color:#DC2626">筛选成本高</strong> — 用户需逐条辨别广告、软广与真实分享</li>
+              <li class="pain" style="color:var(--ink-2)"><strong style="color:#DC2626">信任建立慢</strong> — 缺乏结构化证据，决策依赖主观判断</li>
+            </ul>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <h3>典型场景</h3>
+            <p class="lead" style="margin-top:8px">「混油皮粉底液」→ 浏览 50+ 笔记 → 对比 10 条评论 → 仍不确定买哪款</p>
+          </div>
+        </div>
+      </div>
+      <span class="slide-num">04 / 22</span>
+    </section>
+
+    <!-- P5 用户需求 After -->
+    <section class="slide">
+      <div class="section-tag">03 · 用户需求变化</div>
+      <h2>用户旅程对比：After</h2>
+      <div class="flex" style="margin-top:20px;gap:32px">
+        <div class="flex-1">
+          <div class="card card-red" style="margin-bottom:16px">
+            <div class="tag tag-red" style="margin-bottom:10px">搜索目标</div>
+            <p style="font-size:18px;font-weight:600;color:var(--xhs-red)">降低决策成本</p>
+          </div>
+          <div class="swimlane swim-after">
+            <div class="swim-header">用户旅程 · After</div>
+            <div class="swim-body">
+              <span class="swim-step">提出问题</span><span class="swim-arrow">→</span>
+              <span class="swim-step">获得总结答案</span><span class="swim-arrow">→</span>
+              <span class="swim-step">验证真实经验</span><span class="swim-arrow">→</span>
+              <span class="swim-step">继续追问</span><span class="swim-arrow">→</span>
+              <span class="swim-step">完成决策</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="card card-green">
+            <h3 style="color:#059669">Opportunities</h3>
+            <ul class="clean" style="margin-top:12px">
+              <li><strong style="color:#059669">快速获得结论</strong> — AI 前置消化信息，直接呈现决策要点</li>
+              <li><strong style="color:#059669">保留证据链</strong> — 每条结论可回溯至真实笔记来源</li>
+              <li><strong style="color:#059669">支持探索</strong> — 多轮对话允许需求动态修正与收敛</li>
+            </ul>
+          </div>
+          <div class="card card-amber" style="margin-top:16px">
+            <h3>范式转变</h3>
+            <p class="lead" style="margin-top:8px">用户不再「自己当搜索引擎」，而是与 AI 协作完成从问题到决策的完整闭环。</p>
+          </div>
+        </div>
+      </div>
+      <span class="slide-num">05 / 22</span>
+    </section>
+
+    <!-- P6 Stage 1 搜索入口 -->
+    <section class="slide">
+      <div class="section-tag">04 · 搜索体验演进 · Stage 1</div>
+      <h2>搜索入口升级：从输入框到对话入口</h2>
+      <div class="flex content-grow" style="margin-top:24px;align-items:center">
+        <div class="flex-1">
+          <div class="tag" style="margin-bottom:12px">旧版</div>
+          <div class="search-mock">
+            <span class="icon">🔍</span>
+            <span class="placeholder">搜索笔记、商品、用户</span>
+          </div>
+          <p class="lead" style="margin-top:12px;text-align:center">关键词输入框 · 被动等待用户组织语言</p>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="flex-1">
+          <div class="tag tag-red" style="margin-bottom:12px">新版</div>
+          <div class="search-mock new">
+            <span class="icon">💬</span>
+            <span class="placeholder" style="color:var(--ink-2)">混油皮夏天通勤用什么粉底液？</span>
+          </div>
+          <div class="chips" style="margin-top:10px">
+            <span class="chip">🎤 语音输入</span>
+            <span class="chip">✨ AI 问一问</span>
+            <span class="chip">📷 以图搜图</span>
+          </div>
+          <p class="lead" style="margin-top:12px;text-align:center">对话入口 · 问句引导 · 多模态输入</p>
+        </div>
+      </div>
+      <div class="card card-red mt-auto">
+        <h3 style="color:var(--xhs-red)">设计价值</h3>
+        <p class="lead" style="margin-top:6px"><strong>降低表达门槛</strong> — 用户无需学习「搜索语言」，用自然语言、语音或图片即可发起检索；问句引导降低冷启动焦虑。</p>
+      </div>
+      <span class="slide-num">06 / 22</span>
+    </section>
+
+    <!-- P7 Stage 2 Query理解 -->
+    <section class="slide">
+      <div class="section-tag">04 · 搜索体验演进 · Stage 2</div>
+      <h2>Query 理解升级：从关键词匹配到意图理解</h2>
+      <div class="flex" style="margin-top:20px;gap:28px">
+        <div class="flex-1 card">
+          <div class="tag" style="margin-bottom:10px">以前</div>
+          <div class="flow-box" style="font-size:16px;padding:16px">粉底液</div>
+          <p class="lead" style="margin-top:10px;text-align:center">单一关键词 · 模糊匹配</p>
+        </div>
+        <div style="display:flex;align-items:center;font-size:24px;color:var(--xhs-red)">→</div>
+        <div class="flex-1 card card-red">
+          <div class="tag tag-red" style="margin-bottom:10px">现在</div>
+          <div class="flow-box highlight" style="font-size:14px;padding:16px">混油皮夏天通勤粉底液</div>
+          <p class="lead" style="margin-top:10px;text-align:center">完整意图句 · 多维拆解</p>
+        </div>
+      </div>
+      <div style="margin-top:24px">
+        <h3>意图拆解流程</h3>
+        <div class="flex" style="margin-top:12px;align-items:center;justify-content:center;gap:8px">
+          <div class="flow-box blue">肤质<br><small style="font-weight:400;color:var(--ink-3)">混油皮</small></div>
+          <span class="swim-arrow">+</span>
+          <div class="flow-box blue">季节<br><small style="font-weight:400;color:var(--ink-3)">夏天</small></div>
+          <span class="swim-arrow">+</span>
+          <div class="flow-box blue">场景<br><small style="font-weight:400;color:var(--ink-3)">通勤</small></div>
+          <span class="swim-arrow">+</span>
+          <div class="flow-box blue">品类<br><small style="font-weight:400;color:var(--ink-3)">粉底液</small></div>
+          <span class="swim-arrow">→</span>
+          <div class="flow-box highlight">精准召回<br><small style="font-weight:400">+ 个性化排序</small></div>
+        </div>
+      </div>
+      <div class="card mt-auto" style="margin-top:20px">
+        <p class="lead"><strong>设计价值：</strong>用户无需学习搜索语法，自然表达即可被系统理解并结构化拆解。</p>
+      </div>
+      <span class="slide-num">07 / 22</span>
+    </section>
+
+    <!-- P8 Stage 3 多模态 1 -->
+    <section class="slide">
+      <div class="section-tag">04 · 搜索体验演进 · Stage 3</div>
+      <h2>多模态理解：图片开始「会说话」</h2>
+      <p class="lead" style="margin-bottom:16px">文字、图片、视频、语音统一进入 Embedding 空间，实现跨模态经验检索。</p>
+      <div style="display:flex;align-items:center;justify-content:center;flex:1">
+        <svg width="520" height="380" viewBox="0 0 520 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="210" y="150" width="100" height="60" rx="10" fill="#FFF0F2" stroke="#FF2442" stroke-width="2"/>
+          <text x="260" y="185" text-anchor="middle" font-size="12" font-weight="600" fill="#FF2442">统一 Embedding</text>
+          <rect x="30" y="30" width="90" height="44" rx="8" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+          <text x="75" y="58" text-anchor="middle" font-size="12" fill="#1D4ED8">📝 文字</text>
+          <rect x="30" y="150" width="90" height="44" rx="8" fill="#ECFDF5" stroke="#10B981" stroke-width="1.5"/>
+          <text x="75" y="178" text-anchor="middle" font-size="12" fill="#047857">📷 图片</text>
+          <rect x="30" y="270" width="90" height="44" rx="8" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5"/>
+          <text x="75" y="298" text-anchor="middle" font-size="12" fill="#B45309">🎬 视频</text>
+          <rect x="400" y="150" width="90" height="44" rx="8" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="1.5"/>
+          <text x="445" y="178" text-anchor="middle" font-size="12" fill="#6D28D9">🎤 语音</text>
+          <line x1="120" y1="52" x2="210" y2="170" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <line x1="120" y1="172" x2="210" y2="180" stroke="#CBD5E1" stroke-width="1.5"/>
+          <line x1="120" y1="292" x2="210" y2="190" stroke="#CBD5E1" stroke-width="1.5"/>
+          <line x1="400" y1="172" x2="310" y2="180" stroke="#CBD5E1" stroke-width="1.5"/>
+          <rect x="190" y="260" width="140" height="44" rx="8" fill="#FAFAFA" stroke="#E8E8E8" stroke-width="1.5"/>
+          <text x="260" y="288" text-anchor="middle" font-size="12" fill="#4A4A4A">搜索理解 → 答案生成</text>
+          <line x1="260" y1="210" x2="260" y2="260" stroke="#FF2442" stroke-width="2" marker-end="url(#arrowRed)"/>
+          <rect x="190" y="330" width="140" height="40" rx="8" fill="#FFF0F2" stroke="#FF2442" stroke-width="1.5"/>
+          <text x="260" y="355" text-anchor="middle" font-size="12" font-weight="600" fill="#FF2442">证据回溯</text>
+          <line x1="260" y1="304" x2="260" y2="330" stroke="#FF2442" stroke-width="1.5"/>
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#CBD5E1"/></marker>
+            <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#FF2442"/></marker>
+          </defs>
+        </svg>
+      </div>
+      <span class="slide-num">08 / 22</span>
+    </section>
+
+    <!-- P9 Stage 3 多模态 2 -->
+    <section class="slide">
+      <div class="section-tag">04 · 搜索体验演进 · Stage 3</div>
+      <h2>多模态场景：真实经验被结构化</h2>
+      <div class="grid-2" style="margin-top:20px">
+        <div class="card">
+          <h3>📷 以图搜经验</h3>
+          <p class="lead" style="margin-top:8px">用户拍摄产品/场景图片，系统识别品类、风格、场景，匹配相似真实笔记与购买建议。</p>
+          <div class="search-mock new" style="margin-top:12px;border-radius:12px">
+            <span class="icon">📷</span>
+            <span class="placeholder" style="font-size:12px">识别：北欧风客厅 · 原木茶几</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🎤 语音搜经验</h3>
+          <p class="lead" style="margin-top:8px">通勤、做饭等双手占用场景，语音输入自然问句，降低表达与操作门槛。</p>
+          <div class="search-mock new" style="margin-top:12px;border-radius:12px">
+            <span class="icon">🎤</span>
+            <span class="placeholder" style="font-size:12px">「东京三天两晚住哪比较方便」</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🎬 视频理解</h3>
+          <p class="lead" style="margin-top:8px">从 vlog、教程视频中提取关键帧与语义，关联文字经验，丰富决策维度。</p>
+        </div>
+        <div class="card card-red">
+          <h3 style="color:var(--xhs-red)">设计价值</h3>
+          <p class="lead" style="margin-top:8px"><strong>真实经验被结构化</strong> — 多模态输入打破「只会打字搜索」的限制，让社区 UGC 资产以用户最自然的方式被激活。</p>
+        </div>
+      </div>
+      <span class="slide-num">09 / 22</span>
+    </section>
+
+    <!-- P10 Stage 4 结果页 1 -->
+    <section class="slide">
+      <div class="section-tag">04 · 搜索体验演进 · Stage 4</div>
+      <h2>结果页重构：从 Feed 流到分层决策结构</h2>
+      <div class="flex" style="margin-top:20px;gap:28px">
+        <div class="flex-1">
+          <div class="tag" style="margin-bottom:10px">以前</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="flow-box" style="padding:20px;background:#F3F4F6">Feed 笔记卡片</div>
+            <div class="flow-box" style="padding:20px;background:#F3F4F6">Feed 笔记卡片</div>
+            <div class="flow-box" style="padding:20px;background:#F3F4F6">Feed 笔记卡片</div>
+            <div class="flow-box" style="padding:20px;background:#F3F4F6">Feed 笔记卡片</div>
+          </div>
+          <p class="lead" style="margin-top:10px;text-align:center">平铺信息流 · 用户自行筛选总结</p>
+        </div>
+        <div style="display:flex;align-items:center;font-size:24px;color:var(--xhs-red)">→</div>
+        <div class="flex-1">
+          <div class="tag tag-red" style="margin-bottom:10px">现在</div>
+          <div class="ia-layer ia-answer"><span class="layer-tag">Answer</span><span class="layer-content">AI 总结：混油皮夏季推荐 3 款通勤粉底液…</span></div>
+          <div class="ia-layer ia-evidence"><span class="layer-tag">Evidence</span><span class="layer-content">12 篇真实笔记引用 · 推荐理由拆解</span></div>
+          <div class="ia-layer ia-explore"><span class="layer-tag">Explore</span><span class="layer-content">相关问题 · 更多探索入口</span></div>
+        </div>
+      </div>
+      <span class="slide-num">10 / 22</span>
+    </section>
+
+    <!-- P11 Stage 4 结果页 2 -->
+    <section class="slide">
+      <div class="section-tag">04 · 搜索体验演进 · Stage 4</div>
+      <h2>三层信息架构：认知负荷前置消化</h2>
+      <div class="flex content-grow" style="margin-top:24px;gap:40px;align-items:center">
+        <div class="flex-1">
+          <div class="ia-layer ia-answer" style="padding:20px">
+            <span class="layer-tag">Answer Layer</span>
+            <div>
+              <h3>快速决策</h3>
+              <p class="lead" style="margin-top:4px">AI 前置消化海量笔记，提炼结论性答案，用户 3 秒内获得决策方向</p>
+            </div>
+          </div>
+          <div class="ia-layer ia-evidence" style="padding:20px">
+            <span class="layer-tag">Evidence Layer</span>
+            <div>
+              <h3>建立信任</h3>
+              <p class="lead" style="margin-top:4px">每条结论附带真实笔记来源、作者画像、互动数据，可追溯验证</p>
+            </div>
+          </div>
+          <div class="ia-layer ia-explore" style="padding:20px">
+            <span class="layer-tag">Exploration Layer</span>
+            <div>
+              <h3>持续探索</h3>
+              <p class="lead" style="margin-top:4px">相关问题推荐、细分话题入口，满足深度探索需求</p>
+            </div>
+          </div>
+        </div>
+        <div class="card card-red flex-1" style="padding:28px">
+          <h3 style="color:var(--xhs-red);font-size:18px">设计价值</h3>
+          <p class="lead" style="margin-top:12px;font-size:14px;line-height:1.8">将<strong>认知负荷前置消化</strong>——系统承担信息筛选与总结工作，用户只需在 Answer 层做快速判断，在 Evidence 层建立信任，在 Exploration 层按需深入。</p>
+          <p class="lead" style="margin-top:12px;font-size:13px;color:var(--ink-3)">这不仅是 UI 改版，而是信息架构范式的根本转变。</p>
+        </div>
+      </div>
+      <span class="slide-num">11 / 22</span>
+    </section>
+
+    <!-- P12 Stage 5 连续搜索 -->
+    <section class="slide">
+      <div class="section-tag">04 · 搜索体验演进 · Stage 5</div>
+      <h2>连续搜索：从一次搜索到多轮追问</h2>
+      <div class="flex" style="margin-top:20px;gap:40px">
+        <div class="flex-1">
+          <div class="tag" style="margin-bottom:12px">以前：一次搜索 · 一次决策</div>
+          <div class="card" style="text-align:center;padding:32px">
+            <p style="font-size:14px;color:var(--ink-2)">东京旅游攻略</p>
+            <div class="arrow-down">↓</div>
+            <p style="font-size:13px;color:var(--ink-3)">浏览 → 退出 → 重新搜索</p>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="tag tag-red" style="margin-bottom:12px">现在：多轮追问 · 动态收敛</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div class="conv-bubble conv-user">东京住哪方便？</div>
+            <div class="conv-bubble conv-ai">推荐新宿/涩谷区域，交通便利…</div>
+            <div class="conv-bubble conv-user">预算 800 左右呢？</div>
+            <div class="conv-bubble conv-ai">800 元可住新宿东口商务酒店…</div>
+            <div class="conv-bubble conv-user">第一次去，适合带爸妈吗？</div>
+            <div class="conv-bubble conv-ai">建议选电梯房+近地铁，推荐…</div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-auto" style="margin-top:20px">
+        <p class="lead"><strong>设计价值：</strong>决策过程被完整保留，上下文不丢失；用户需求在对话中逐步澄清，搜索从「单次交易」变为「持续协作」。</p>
+      </div>
+      <span class="slide-num">12 / 22</span>
+    </section>
+
+    <!-- P13 设计策略 1 -->
+    <section class="slide">
+      <div class="section-tag">05 · 设计策略提炼</div>
+      <h2>五维体验策略模型</h2>
+      <div class="pentagon-wrap" style="margin-top:16px">
+        <svg class="pentagon-svg" width="300" height="300" viewBox="0 0 300 300">
+          <polygon points="150,30 270,110 230,240 70,240 30,110" fill="none" stroke="#FFD6DC" stroke-width="2"/>
+          <polygon points="150,55 245,115 215,220 85,220 55,115" fill="#FFF0F2" stroke="#FF2442" stroke-width="1.5" opacity="0.6"/>
+          <circle cx="150" cy="30" r="6" fill="#FF2442"/><text x="150" y="18" text-anchor="middle" font-size="10" font-weight="600" fill="#FF2442">Answer First</text>
+          <circle cx="270" cy="110" r="6" fill="#3B82F6"/><text x="290" y="114" font-size="10" font-weight="600" fill="#3B82F6">Trust by</text><text x="290" y="126" font-size="10" font-weight="600" fill="#3B82F6">Evidence</text>
+          <circle cx="230" cy="240" r="6" fill="#10B981"/><text x="248" y="258" font-size="10" font-weight="600" fill="#10B981">Progressive</text><text x="248" y="270" font-size="10" font-weight="600" fill="#10B981">Disclosure</text>
+          <circle cx="70" cy="240" r="6" fill="#8B5CF6"/><text x="10" y="258" font-size="10" font-weight="600" fill="#8B5CF6">Conversational</text><text x="10" y="270" font-size="10" font-weight="600" fill="#8B5CF6">Exploration</text>
+          <circle cx="30" cy="110" r="6" fill="#F59E0B"/><text x="10" y="104" font-size="10" font-weight="600" fill="#F59E0B">Lower</text><text x="10" y="116" font-size="10" font-weight="600" fill="#F59E0B">Cognitive Load</text>
+          <text x="150" y="155" text-anchor="middle" font-size="13" font-weight="700" fill="#FF2442">体验策略</text>
+          <text x="150" y="172" text-anchor="middle" font-size="10" fill="#8A8A8A">Experience Strategy</text>
+        </svg>
+        <div class="strategy-list flex-1">
+          <div class="strategy-item"><h3>Strategy 1 · Answer First</h3><p>先给答案，再给内容。AI 总结置于结果页顶部，用户无需翻阅即可获得决策方向。</p></div>
+          <div class="strategy-item"><h3>Strategy 2 · Trust by Evidence</h3><p>AI 总结必须附带真实经验来源。每条结论可回溯至具体笔记，建立可信证据链。</p></div>
+          <div class="strategy-item"><h3>Strategy 3 · Lower Cognitive Load</h3><p>把复杂筛选转化为自然表达。用户用口语提问，系统完成结构化理解与召回。</p></div>
+        </div>
+      </div>
+      <span class="slide-num">13 / 22</span>
+    </section>
+
+    <!-- P14 设计策略 2 -->
+    <section class="slide">
+      <div class="section-tag">05 · 设计策略提炼</div>
+      <h2>策略详解与应用场景</h2>
+      <div class="grid-2" style="margin-top:24px">
+        <div class="card card-green">
+          <h3 style="color:#059669">Strategy 4 · Progressive Disclosure</h3>
+          <p class="lead" style="margin-top:10px">逐层展开信息，避免一次展示过多内容。</p>
+          <ul class="clean" style="margin-top:12px">
+            <li>首屏：AI 摘要 + 核心推荐</li>
+            <li>展开：引用笔记列表 + 理由拆解</li>
+            <li>深入：相关问题 + 细分话题</li>
+          </ul>
+        </div>
+        <div class="card card-purple">
+          <h3 style="color:#6D28D9">Strategy 5 · Conversational Exploration</h3>
+          <p class="lead" style="margin-top:10px">允许用户边探索边修正需求。</p>
+          <ul class="clean" style="margin-top:12px">
+            <li>保留对话上下文，避免重复输入</li>
+            <li>追问触发精准收敛，而非重新搜索</li>
+            <li>决策路径可追溯、可回溯</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card card-red mt-auto" style="margin-top:24px;padding:24px">
+        <h3 style="color:var(--xhs-red)">策略升维：从功能罗列到体验原则</h3>
+        <p class="lead" style="margin-top:8px">这五条策略不仅适用于小红书，更可迁移至腾讯、阿里、字节等内容+AI 搜索场景——它们是搜索范式变革下的通用体验设计原则。</p>
+      </div>
+      <span class="slide-num">14 / 22</span>
+    </section>
+
+    <!-- P15 Opportunity 1 -->
+    <section class="slide">
+      <div class="section-tag">06 · 我的思考与机会点</div>
+      <h2>Opportunity 1：AI 答案可信度可视化</h2>
+      <p class="lead" style="margin-bottom:20px">当前 AI 总结缺乏「可信度感知」——用户不知道答案有多可靠。建议引入可量化的信任信号层。</p>
+      <div class="flex" style="gap:24px">
+        <div class="card flex-1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3>高可信</h3>
+            <span class="tag" style="background:#ECFDF5;color:#059669;border-color:#A7F3D0">推荐</span>
+          </div>
+          <div class="cred-bar"><div class="cred-fill cred-high"></div></div>
+          <ul class="clean" style="margin-top:8px">
+            <li>引用 20+ 篇笔记，观点高度一致</li>
+            <li>近 3 个月内发布，时效性强</li>
+            <li>含素人真实体验 + 专业博主</li>
+          </ul>
+        </div>
+        <div class="card flex-1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3>中可信</h3>
+            <span class="tag" style="background:#FFFBEB;color:#B45309;border-color:#FDE68A">参考</span>
+          </div>
+          <div class="cred-bar"><div class="cred-fill cred-mid"></div></div>
+          <ul class="clean" style="margin-top:8px">
+            <li>引用 5–15 篇，部分观点分歧</li>
+            <li>内容跨度 6 个月以上</li>
+          </ul>
+        </div>
+        <div class="card flex-1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3>低可信</h3>
+            <span class="tag" style="background:#FEF2F2;color:#DC2626;border-color:#FECACA">谨慎</span>
+          </div>
+          <div class="cred-bar"><div class="cred-fill cred-low"></div></div>
+          <ul class="clean" style="margin-top:8px">
+            <li>引用不足 5 篇或高度同质化</li>
+            <li>广告/软广占比过高</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card card-blue mt-auto" style="margin-top:20px">
+        <p class="lead"><strong>设计建议：</strong>在 Answer Layer 顶部展示可信度标签 + 引用数量 + 发布时间分布 + 作者类型构成，让用户在 1 秒内判断「这个答案能不能信」。</p>
+      </div>
+      <span class="slide-num">15 / 22</span>
+    </section>
+
+    <!-- P16 Opportunity 2 -->
+    <section class="slide">
+      <div class="section-tag">06 · 我的思考与机会点</div>
+      <h2>Opportunity 2：多模态筛选器</h2>
+      <p class="lead" style="margin-bottom:24px">不同决策场景对内容形态有不同偏好——引入模态筛选可显著提升检索效率。</p>
+      <div class="grid-3" style="margin-top:8px">
+        <div class="card card-blue" style="text-align:center;padding:28px 20px">
+          <div style="font-size:36px;margin-bottom:12px">📷</div>
+          <h3>只看图片经验</h3>
+          <p class="lead" style="margin-top:8px">装修、穿搭、美妆试色等强视觉决策场景</p>
+        </div>
+        <div class="card card-green" style="text-align:center;padding:28px 20px">
+          <div style="font-size:36px;margin-bottom:12px">🎬</div>
+          <h3>只看视频经验</h3>
+          <p class="lead" style="margin-top:8px">教程、测评、沉浸式体验等动态内容场景</p>
+        </div>
+        <div class="card card-amber" style="text-align:center;padding:28px 20px">
+          <div style="font-size:36px;margin-bottom:12px">📍</div>
+          <h3>只看本地用户</h3>
+          <p class="lead" style="margin-top:8px">旅行、探店、同城服务等地理位置相关场景</p>
+        </div>
+      </div>
+      <div class="flex mt-auto" style="margin-top:24px;gap:20px">
+        <div class="card flex-1">
+          <h3>交互形态建议</h3>
+          <p class="lead" style="margin-top:6px">Evidence Layer 顶部增加模态 Tab 筛选，默认「全部」，可切换至单一模态视图</p>
+        </div>
+        <div class="card card-red flex-1">
+          <h3 style="color:var(--xhs-red)">预期价值</h3>
+          <p class="lead" style="margin-top:6px">减少 40%+ 无效浏览，让证据层更精准地服务决策场景</p>
+        </div>
+      </div>
+      <span class="slide-num">16 / 22</span>
+    </section>
+
+    <!-- P17 Opportunity 3 -->
+    <section class="slide">
+      <div class="section-tag">06 · 我的思考与机会点</div>
+      <h2>Opportunity 3：决策收藏夹</h2>
+      <p class="lead" style="margin-bottom:20px">搜索过程本身是有价值的——将多轮对话与证据沉淀为可复用的个人资产。</p>
+      <div class="grid-3" style="margin-top:12px">
+        <div class="card" style="border-top:3px solid var(--xhs-red)">
+          <h3>🗼 我的东京攻略</h3>
+          <p class="lead" style="margin-top:8px">3 轮对话 · 8 篇引用笔记</p>
+          <div class="chips"><span class="chip">住宿</span><span class="chip">交通</span><span class="chip">美食</span></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--blue)">
+          <h3>🏠 我的装修方案</h3>
+          <p class="lead" style="margin-top:8px">5 轮对话 · 23 篇引用笔记</p>
+          <div class="chips"><span class="chip" style="background:var(--blue-bg);color:var(--blue);border-color:#BFDBFE">北欧风</span><span class="chip" style="background:var(--blue-bg);color:var(--blue);border-color:#BFDBFE">预算</span></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--green)">
+          <h3>🧴 我的护肤清单</h3>
+          <p class="lead" style="margin-top:8px">2 轮对话 · 15 篇引用笔记</p>
+          <div class="chips"><span class="chip" style="background:var(--green-bg);color:var(--green);border-color:#A7F3D0">混油皮</span><span class="chip" style="background:var(--green-bg);color:var(--green);border-color:#A7F3D0">夏季</span></div>
+        </div>
+      </div>
+      <div class="card card-purple mt-auto" style="margin-top:24px">
+        <h3 style="color:#6D28D9">设计建议</h3>
+        <p class="lead" style="margin-top:8px">对话结束时提供「保存为攻略」入口，自动聚合 AI 摘要 + 关键笔记 + 对话脉络，生成可分享、可编辑的决策文档。搜索从「用完即走」变为「经验资产沉淀」。</p>
+      </div>
+      <span class="slide-num">17 / 22</span>
+    </section>
+
+    <!-- P18 总结 -->
+    <section class="slide">
+      <div class="section-tag">07 · 项目总结</div>
+      <h2>核心结论：搜索范式的三次跃迁</h2>
+      <div class="flex content-grow" style="margin-top:24px;gap:48px;align-items:center">
+        <div class="evo-pyramid flex-1">
+          <div class="evo-step evo-1">Content Search · 内容检索</div>
+          <div class="evo-arrow">↓</div>
+          <div class="evo-step evo-2">Experience Search · 经验搜索</div>
+          <div class="evo-arrow">↓</div>
+          <div class="evo-step evo-3">Decision Assistant · 决策辅助</div>
+          <div class="evo-arrow">↓</div>
+          <div class="evo-step evo-4">Experience Agent · 经验智能体（未来）</div>
+        </div>
+        <div class="flex-1">
+          <div class="card card-red" style="padding:28px">
+            <p style="font-size:16px;line-height:1.8;color:var(--ink);font-weight:500">小红书搜索的本质变化，并非 AI 功能叠加，而是完成了从<strong style="color:var(--xhs-red)">「信息检索」</strong>到<strong style="color:var(--xhs-red)">「经验决策」</strong>的范式迁移。</p>
+          </div>
+          <ul class="clean" style="margin-top:20px">
+            <li>入口：从关键词到自然表达</li>
+            <li>理解：从匹配到意图拆解</li>
+            <li>模态：从纯文本到多模态融合</li>
+            <li>结果：从 Feed 到分层决策</li>
+            <li>路径：从单次搜索到连续对话</li>
+          </ul>
+        </div>
+      </div>
+      <span class="slide-num">18 / 22</span>
+    </section>
+
+    <!-- P19 研究方法 -->
+    <section class="slide">
+      <div class="section-tag">附录 · 研究方法</div>
+      <h2>研究框架与信息来源</h2>
+      <div class="grid-2" style="margin-top:24px">
+        <div class="card">
+          <h3>研究方法</h3>
+          <ul class="clean" style="margin-top:12px">
+            <li><strong>体验走查</strong> — 2025.01–2026.06 持续追踪小红书搜索主路径</li>
+            <li><strong>版本对比</strong> — 对比搜索入口、结果页、AI 功能各版本迭代</li>
+            <li><strong>场景分析</strong> — 覆盖美妆、旅行、家居、美食等高频决策场景</li>
+            <li><strong>策略提炼</strong> — 从功能变化中抽象可迁移的体验设计原则</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>分析维度</h3>
+          <ul class="clean" style="margin-top:12px">
+            <li>搜索入口：输入方式、引导策略、多模态支持</li>
+            <li>Query 理解：意图拆解、个性化、上下文感知</li>
+            <li>结果呈现：信息架构、信任机制、探索路径</li>
+            <li>对话能力：多轮追问、上下文保持、需求收敛</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card card-amber mt-auto" style="margin-top:20px">
+        <p class="lead"><strong>声明：</strong>本研究基于公开产品体验与行业观察，旨在展示体验策略分析能力，不代表小红书官方观点。</p>
+      </div>
+      <span class="slide-num">19 / 22</span>
+    </section>
+
+    <!-- P20 里程碑 -->
+    <section class="slide">
+      <div class="section-tag">附录 · 2025–2026 体验演进里程碑</div>
+      <h2>关键迭代时间线</h2>
+      <div style="margin-top:28px;position:relative;padding-left:24px">
+        <div style="position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--line)"></div>
+        <div style="margin-bottom:24px;position:relative;padding-left:24px">
+          <div style="position:absolute;left:-20px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--xhs-red);border:2px solid #fff;box-shadow:0 0 0 2px var(--xhs-red)"></div>
+          <div class="tag tag-red" style="margin-bottom:6px">2025 Q1</div>
+          <h3>搜索入口对话化</h3>
+          <p class="lead">问句引导上线 · 语音搜索入口 · 「问一问」内测</p>
+        </div>
+        <div style="margin-bottom:24px;position:relative;padding-left:24px">
+          <div style="position:absolute;left:-20px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--blue);border:2px solid #fff;box-shadow:0 0 0 2px var(--blue)"></div>
+          <div class="tag" style="margin-bottom:6px;background:var(--blue-bg);color:var(--blue);border-color:#BFDBFE">2025 Q2–Q3</div>
+          <h3>AI 总结结果页</h3>
+          <p class="lead">Answer Layer 上线 · 笔记引用溯源 · 相关问题推荐</p>
+        </div>
+        <div style="margin-bottom:24px;position:relative;padding-left:24px">
+          <div style="position:absolute;left:-20px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid #fff;box-shadow:0 0 0 2px var(--green)"></div>
+          <div class="tag" style="margin-bottom:6px;background:var(--green-bg);color:var(--green);border-color:#A7F3D0">2025 Q4</div>
+          <h3>多模态搜索扩展</h3>
+          <p class="lead">以图搜图升级 · 视频语义理解 · 跨模态 Embedding 召回</p>
+        </div>
+        <div style="position:relative;padding-left:24px">
+          <div style="position:absolute;left:-20px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--purple);border:2px solid #fff;box-shadow:0 0 0 2px var(--purple)"></div>
+          <div class="tag" style="margin-bottom:6px;background:var(--purple-bg);color:var(--purple);border-color:#DDD6FE">2026 Q1–Q2</div>
+          <h3>连续搜索与深度对话</h3>
+          <p class="lead">多轮追问 · 上下文保持 · 搜索 Agent 形态探索</p>
+        </div>
+      </div>
+      <span class="slide-num">20 / 22</span>
+    </section>
+
+    <!-- P21 能力映射 -->
+    <section class="slide">
+      <div class="section-tag">附录 · 岗位能力映射</div>
+      <h2>本研究体现的核心能力</h2>
+      <div class="grid-2" style="margin-top:28px">
+        <div class="card card-red">
+          <h3 style="color:var(--xhs-red)">体验策略能力</h3>
+          <p class="lead" style="margin-top:8px">从行业趋势中识别范式变革，提炼 Answer First、Trust by Evidence 等可落地策略</p>
+        </div>
+        <div class="card card-blue">
+          <h3 style="color:var(--blue)">信息架构能力</h3>
+          <p class="lead" style="margin-top:8px">设计 Answer / Evidence / Exploration 三层结构，平衡效率与信任</p>
+        </div>
+        <div class="card card-green">
+          <h3 style="color:var(--green)">多模态交互设计</h3>
+          <p class="lead" style="margin-top:8px">理解文字、图片、语音、视频统一检索的交互逻辑与场景适配</p>
+        </div>
+        <div class="card card-purple">
+          <h3 style="color:#6D28D9">AI 产品设计思维</h3>
+          <p class="lead" style="margin-top:8px">关注可信度、证据链、渐进式披露等 AI 时代特有的体验命题</p>
+        </div>
+      </div>
+      <div class="card mt-auto" style="margin-top:24px;text-align:center;padding:20px">
+        <p class="lead">适用岗位：UX 设计师 · 体验策略 · 交互设计 · AI 产品设计 · 搜索/推荐体验</p>
+      </div>
+      <span class="slide-num">21 / 22</span>
+    </section>
+
+    <!-- P22 致谢 -->
+    <section class="slide slide-cover">
+      <div class="cover-accent"></div>
+      <div class="section-tag">THANK YOU</div>
+      <div class="cover-line"></div>
+      <h1 style="font-size:40px">感谢阅览</h1>
+      <p class="subtitle" style="margin-top:24px">从内容检索到经验决策<br>小红书搜索多模态体验升级研究</p>
+      <div class="cover-meta" style="margin-top:48px">
+        <span>体验策略研究 · 2025–2026</span>
+      </div>
+      <p style="margin-top:64px;font-size:13px;color:rgba(255,255,255,.35)">← → 方向键浏览全部 22 页 · 按 F 全屏演示</p>
+      <span class="slide-num" style="color:rgba(255,255,255,.3)">22 / 22</span>
+    </section>
+
+  </div>
+  <nav class="nav-bar">
+    <button class="nav-btn" id="prevBtn" aria-label="上一页">‹</button>
+    <div class="nav-dots" id="dots"></div>
+    <button class="nav-btn" id="nextBtn" aria-label="下一页">›</button>
+  </nav>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    let cur = 0;
+    const dotsEl = document.getElementById('dots');
+    const progress = document.getElementById('progress');
+    slides.forEach((_, i) => {
+      const d = document.createElement('button');
+      d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+      d.setAttribute('aria-label', '第' + (i+1) + '页');
+      d.addEventListener('click', () => go(i));
+      dotsEl.appendChild(d);
+    });
+    function go(n) {
+      if (n < 0 || n >= total) return;
+      slides[cur].classList.remove('active', 'prev');
+      if (n > cur) slides[cur].classList.add('prev');
+      cur = n;
+      slides[cur].classList.add('active');
+      slides[cur].classList.remove('prev');
+      document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+      progress.style.width = ((cur + 1) / total * 100) + '%';
+    }
+    document.getElementById('prevBtn').onclick = () => go(cur - 1);
+    document.getElementById('nextBtn').onclick = () => go(cur + 1);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
+      if (e.key === 'ArrowLeft') { go(cur - 1); }
+      if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      }
+    });
+    progress.style.width = (1 / total * 100) + '%';
+  </script>
+</body>
+</html>
